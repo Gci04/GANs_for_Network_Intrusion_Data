@@ -1,0 +1,1 @@
+# GANs_for_Network_Intrusion_Data
