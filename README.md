@@ -1,1 +1,1 @@
-# GANs_for_Network_Intrusion_Data
+# GANs for Network Intrusion Data
