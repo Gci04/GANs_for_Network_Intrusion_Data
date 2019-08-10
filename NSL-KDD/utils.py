@@ -24,12 +24,12 @@ def discriminator_network(x, data_dim, min_num_neurones):
     x = Dense(1, activation='sigmoid')(x)
     return x
 
-def define_models_GAN(z_dim = 1, data_dim, min_num_neurones):
+def define_models_GAN(z_dim, data_dim, min_num_neurones):
     """
     Put together the generator model and discriminator model (Define the full Generative Adversarial Network).
 
     Parameters:
-    z_dim : int default = 1
+    z_dim : int
         The dimmension of random noise
     data_dim : int
         The dimmension/size of the original Data (which will be genarated/faked)
@@ -52,14 +52,14 @@ def define_models_GAN(z_dim = 1, data_dim, min_num_neurones):
     discriminator_output = discriminator_network(discriminator_model_input, data_dim, min_num_neurones)
 
     #Generator
-    generator_model = models.Model(inputs=[generator_input], outputs=[generator_output], name='generator')
+    generator_model = Model(inputs=[generator_input], outputs=[generator_output], name='generator')
     #Discriminator
-    discriminator_model = models.Model(inputs=[discriminator_model_input],outputs=[discriminator_output],
+    discriminator_model = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],
                                        name='discriminator')
 
     #Full Network
     combined_output = discriminator_model(generator_model(generator_input))
-    combined_model = models.Model(inputs=[generator_input], outputs=[combined_output], name='Full_Network')
+    combined_model = Model(inputs=[generator_input], outputs=[combined_output], name='Full_Network')
 
     return generator_model, discriminator_model, combined_model
 
@@ -93,6 +93,8 @@ def training_steps(model_components):
             #get discriminator loss on real samples (d_l_r) and Generated/faked (d_l_g)
             d_l_r = discriminator_model.train_on_batch(x, np.random.uniform(low=0.999, high=1.0, size=batch_size))
             d_l_g = discriminator_model.train_on_batch(fake, np.random.uniform(low=0.0, high=0.0001, size=batch_size))
+            # d_l_r = discriminator_model.train_on_batch(x, np.random.uniform(low=0.0, high=0.0001, size=batch_size))
+            # d_l_g = discriminator_model.train_on_batch(fake, np.random.uniform(low=0.999, high=1.0, size=batch_size))
 
         disc_loss_real.append(d_l_r)
         disc_loss_generated.append(d_l_g)
@@ -103,6 +105,7 @@ def training_steps(model_components):
             np.random.seed(i+j)
             z = np.random.normal(size=(batch_size, rand_dim))
 
+            # loss = combined_model.train_on_batch(z, np.random.uniform(low=0.0, high=0.0001, size=batch_size))
             loss = combined_model.train_on_batch(z, np.random.uniform(low=0.999, high=1.0, size=batch_size))
 
         combined_loss.append(loss)
@@ -150,3 +153,5 @@ def adversarial_training_GAN(arguments, train, data_cols, label_cols=[]):
                         combined_loss, disc_loss_generated, disc_loss_real ]
 
     [combined_loss, disc_loss_generated, disc_loss_real] = training_steps(model_components)
+
+    return [generator_model,discriminator_model,combined_model,combined_loss, disc_loss_generated, disc_loss_real]

@@ -7,7 +7,7 @@ from category_encoders import *
 
 warnings.filterwarnings('ignore')
 
-data_folder = "./Data/NSL-KDD"
+data_folder = "../Data/NSL-KDD"
 
 def get_data():
     encoding = 'Label'
