@@ -39,4 +39,7 @@ print(res["combined_model"].predict(np.random.normal(size=(3,32))))
 
 #plot the loss
 plt.plot(np.arange(len(res["disc_loss_generated"])),res["disc_loss_generated"])
+plt.title("NLS-KDD99 Combined model Loss")
+plt.ylabel("Loss")
+plt.xlabel("Epoch")
 plt.show()

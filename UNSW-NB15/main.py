@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler
 import preprocessing
 from classifiers import *
 from utils import *
+from matplotlib import pyplot as plt
 
 train,test, label_mapping = preprocessing.get_data()
 x_train,y_train = train.drop(["label","attack_cat"],axis=1),train.attack_cat.values
@@ -34,3 +35,8 @@ arguments = [rand_dim,combined_ep,batch_size,ep_d,ep_g,learning_rate,base_n_coun
 res = adversarial_training_GAN(arguments,x,data_cols,label_cols)
 
 print(res["combined_model"].predict(np.random.normal(size=(3,32))))
+plt.plot(np.arange(len(res["disc_loss_generated"])),res["disc_loss_generated"])
+plt.title("UNSW-NS15 Combined model Loss")
+plt.ylabel("Loss")
+plt.xlabel("Epoch")
+plt.show()
