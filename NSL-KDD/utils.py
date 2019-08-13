@@ -154,4 +154,6 @@ def adversarial_training_GAN(arguments, train, data_cols, label_cols=[]):
 
     [combined_loss, disc_loss_generated, disc_loss_real] = training_steps(model_components)
 
-    return [generator_model,discriminator_model,combined_model,combined_loss, disc_loss_generated, disc_loss_real]
+    return dict({"generator_model":generator_model,"discriminator_model":discriminator_model,\
+            "combined_model":combined_model,"combined_loss":combined_loss,\
+            "disc_loss_generated":disc_loss_generated,"disc_loss_real": disc_loss_real})

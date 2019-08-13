@@ -32,11 +32,8 @@ def get_data():
     test['label'] = le.transform(test.label)
 
     if encoding == "OneHot":
-
         nTrain = train.shape[0]
-
         combined = pd.get_dummies(pd.concat((train,test),axis=0), columns=["protocol_type","service","flag"])
-
         train = combined.iloc[:nTrain]
         test = combined.iloc[nTrain:]
 
@@ -55,4 +52,8 @@ def get_data():
         train = enc.fit_transform(train,train.label)
         test = enc.transform(test)
 
+    if encoding == "catboost":
+        enc = CatBoostEncoder(cols=categorical_features)
+        train = enc.fit_transform(train,train.label)
+        test = enc.transform(test)
     return train, test, label_mapping
