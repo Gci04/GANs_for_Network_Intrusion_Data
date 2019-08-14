@@ -29,7 +29,7 @@ def define_models_GAN(z_dim, data_dim, min_num_neurones):
     Put together the generator model and discriminator model (Define the full Generative Adversarial Network).
 
     Parameters:
-    z_dim : int
+    z_dim : int default = 1
         The dimmension of random noise
     data_dim : int
         The dimmension/size of the original Data (which will be genarated/faked)
@@ -73,10 +73,10 @@ def get_batch(X, batch_size=1):
     batch_ix = np.random.choice(len(X), batch_size, replace=False)
     return X[batch_ix]
 
-#----------
+
 def training_steps(model_components):
 
-    [train, data_cols, data_dim,generator_model, discriminator_model, combined_model,rand_dim, nb_steps,
+    [train, data_dim,generator_model, discriminator_model, combined_model,rand_dim, nb_steps,
     batch_size, D_epochs, G_epochs,combined_loss, disc_loss_generated, disc_loss_real] = model_components
 
     for i in range(nb_steps):
@@ -120,13 +120,11 @@ def training_steps(model_components):
 
     return [combined_loss, disc_loss_generated, disc_loss_real]
 
-def adversarial_training_GAN(arguments, train, data_cols, label_cols=[]):
+def adversarial_training_GAN(arguments, train):
 
     [rand_noise_dim, nb_steps, batch_size,D_epochs, G_epochs, learning_rate, min_num_neurones] = arguments
 
-    data_dim = len(data_cols)
-    print('data_dim: ', data_dim)
-    print('data_cols: ', data_cols)
+    data_dim = train.shape[1]
 
     # define network models
     K.set_learning_phase(1) # 1 = train
@@ -148,7 +146,7 @@ def adversarial_training_GAN(arguments, train, data_cols, label_cols=[]):
 
     combined_loss, disc_loss_generated, disc_loss_real = [], [], []
 
-    model_components = [train, data_cols, data_dim,generator_model, discriminator_model, combined_model,
+    model_components = [train, data_dim,generator_model, discriminator_model, combined_model,
                         rand_noise_dim, nb_steps, batch_size, D_epochs, G_epochs,
                         combined_loss, disc_loss_generated, disc_loss_real ]
 

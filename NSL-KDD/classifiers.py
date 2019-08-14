@@ -17,7 +17,7 @@ try:
 except ImportError:
     import pip
     pip.main(['install', '--user', 'catboost'])
-    import catboost
+    import catboost as cat
 
 def __display_perfomance(ytrue, ypred):
     classes = ["dos", "normal", "probe", "r2l", "u2r"]
@@ -44,17 +44,19 @@ def random_forest(xtrain, ytrain, xtest, ytest):
     return rf
 
 def catBoost(xtrain, ytrain, xtest, ytest):
-    cb = catboost.CatBoostClassifier(iterations=100)
+    cb = cat.CatBoostClassifier(verbose=0,n_estimators=13,max_depth=5)
     cb = __train_and_test(cb, xtrain, ytrain, xtest, ytest)
     return cb
 
-def neural_network(xtrain, ytrain, xtest, ytest):
+def neural_network(xtrain, ytrain, xtest, ytest, scaled = False):
     """
-    First scale the data using StandardScaler
+    First scale the data using StandardScaler if scaled == False
     """
-    scaler = StandardScaler()
-    xtrain = scaler.fit_transform(xtrain)
-    xtest = scaler.transform(xtest)
+    if not scaled :
+        scaler = StandardScaler()
+        xtrain = scaler.fit_transform(xtrain)
+        xtest = scaler.transform(xtest)
+
     nn = MLPClassifier(hidden_layer_sizes=30, alpha=0.0001, early_stopping=True)
     nn = __train_and_test(nn, xtrain, ytrain, xtest, ytest)
     return nn
@@ -64,16 +66,18 @@ def naive_bayes(xtrain, ytrain, xtest, ytest):
     nb = __train_and_test(nb, xtrain, ytrain, xtest, ytest)
     return nb
 
-def svm(xtrain, ytrain, xtest, ytest):
+def svm(xtrain, ytrain, xtest, ytest, scaled = False):
     """
-    First scale the data using StandardScaler and maybe resample
+    First scale the data using StandardScaler if not scaled and maybe resample
     """
-    scaler = StandardScaler()
-    xtrain = scaler.fit_transform(xtrain)
-    xtest = scaler.transform(xtest)
+    if not scaled :
+        scaler = StandardScaler()
+        xtrain = scaler.fit_transform(xtrain)
+        xtest = scaler.transform(xtest)
+
     svm = SVC(C=10, cache_size=1500, class_weight='balanced')
     svm = __train_and_test(svm, xtrain, ytrain, xtest, ytest)
     return svm
 
-def kMeans(X_train, y_train, X_test, y_test):
+def kMeans(X_train, y_train, X_test, y_test, scaled = False):
     pass

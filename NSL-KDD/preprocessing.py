@@ -9,8 +9,7 @@ warnings.filterwarnings('ignore')
 
 data_folder = "../Data/NSL-KDD"
 
-def get_data():
-    encoding = 'Label'
+def get_data(encoding = 'Label'):
     features = None
     with open('features.txt', 'r') as f:
       features = f.read().split('\n')
