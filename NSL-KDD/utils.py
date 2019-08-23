@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os, sys
+import catboost as cat
+from sklearn.metrics import accuracy_score
 
 import tensorflow as tf
 from keras import backend as K
@@ -74,6 +76,41 @@ def get_batch(X, batch_size=1):
     return X[batch_ix]
 
 
+def classifierAccuracy(X,g_z,n_samples):
+    """
+    Check how good are the generated samples using a catboost classifier. 50% accuracy
+    means that the real samples are identical and the classifier can not differentiate.
+    The classifier is trained with 0.5 n_real + 1/2 n_fake samples.
+
+    X : ndarray
+        The real samples
+    g_z : ndarray
+        The fake samples produced by a generator
+
+    Rerurn Value:
+
+    """
+    y_fake = np.ones(n_samples)
+    y_true = np.zeros(n_samples)
+
+    n = n_samples//2
+    x_train = np.vstack((X[:n,:],g_z[:n,:]))
+    y_train = np.hstack((np.zeros(n),np.ones(n))) # fake : 1, real : 0
+
+    x_test = np.vstack((X[n:,:],g_z[n:,:]))
+    y_test = np.hstack((np.zeros(n),np.ones(n)))
+
+    catb = cat.CatBoostClassifier(verbose=0,n_estimators=13,max_depth=5)
+    catb.fit(x_train,y_train)
+
+    pred = catb.predict(x_test)
+    accuracy = accuracy_score(y_test,pred)
+
+    return np.round(accuracy,decimals=3)
+
+def kl_divergence(p, q):
+    return np.sum(np.where(p != 0, p * np.log(p/q),0))
+
 def training_steps(model_components):
 
     [train, data_dim,generator_model, discriminator_model, combined_model,rand_dim, nb_steps,
@@ -111,12 +148,16 @@ def training_steps(model_components):
         combined_loss.append(loss)
 
         # Checkpoint : get the lossess summery (for Generator and discriminator)
-        if i % 10:
+        if i % 10 == 0:
             K.set_learning_phase(0)
-            test_size = 492
+            test_size = len(train)
 
             z = np.random.normal(size=(test_size, rand_dim))
             g_z = generator_model.predict(z)
+
+            acc = classifierAccuracy(train,g_z,test_size)
+
+            print("Ephoc : {} , combined_loss : {} , classifier_accuracy : {}".format(i,loss,acc))
 
     return [combined_loss, disc_loss_generated, disc_loss_real]
 

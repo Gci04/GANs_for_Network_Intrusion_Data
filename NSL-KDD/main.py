@@ -24,17 +24,16 @@ nn = neural_network(x_train, y_train, x_test, y_test, True)
 # nb = naive_bayes(x_train,y_train,x_test , y_test)
 
 #Generative Adversarial Networks
-# generate r2l attacks samples
-att_ind = np.where(train.label == label_mapping["r2l"])[0]
+att_ind = np.where(train.label == label_mapping["u2r"])[0]
 
 x = x_train[att_ind]
-n_to_generate = 1000
+n_to_generate = 2000
 
 rand_dim = 32
 base_n_count = 128
 
-combined_ep = 700
-batch_size = 128
+combined_ep = 2000
+batch_size = 128 if len(x) > 128 else len(x)
 
 ep_d = 1
 ep_g = 2
@@ -45,14 +44,14 @@ res = adversarial_training_GAN(arguments,x)
 
 generated_samples = res["generator_model"].predict(np.random.normal(size=(n_to_generate,rand_dim)))
 x_train = np.vstack([x_train,generated_samples])
-y_train = np.append(y_train,np.repeat(3,n_to_generate))
+y_train = np.append(y_train,np.repeat(label_mapping["u2r"],n_to_generate))
 
 #classification after upsampling
 randf = random_forest(x_train,y_train,x_test , y_test)
 nn = neural_network(x_train,y_train,x_test , y_test)
 
 #plot the loss
-plt.plot(np.arange(len(res["disc_loss_generated"])),res["disc_loss_generated"])
+plt.plot(np.arange(len(res["combined_loss"])),res["combined_loss"])
 plt.title("NLS-KDD99 Combined model Loss")
 plt.ylabel("Loss")
 plt.xlabel("Epoch")

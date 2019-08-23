@@ -45,6 +45,7 @@ def random_forest(xtrain, ytrain, xtest, ytest):
 
 def catBoost(xtrain, ytrain, xtest, ytest):
     cb = cat.CatBoostClassifier(verbose=0,n_estimators=13,max_depth=5)
+    # {'depth': 10, 'iterations': 800, 'l2_leaf_reg': 1, 'learning_rate': 0.1}
     cb = __train_and_test(cb, xtrain, ytrain, xtest, ytest)
     return cb
 
