@@ -10,12 +10,14 @@ from keras import backend as K
 from keras.models import Model
 from keras.layers import Dense, Dropout, Input, concatenate
 from keras import optimizers
+from scipy.stats import norm
+from keras.losses import kullback_leibler_divergence
 
 def generator_network(z, data_dim, min_num_neurones):
     x = Dense(min_num_neurones, activation='tanh')(z)
     x = Dense(min_num_neurones*2, activation='tanh')(x)
     x = Dense(min_num_neurones*4, activation='tanh')(x)
-    x = Dense(min_num_neurones*8, activation='tanh')(x)
+    # x = Dense(min_num_neurones*8, activation='tanh')(x)
     x = Dense(data_dim)(x)
     return x
 
@@ -157,7 +159,19 @@ def training_steps(model_components):
 
             acc = classifierAccuracy(train,g_z,test_size)
 
-            print("Ephoc : {} , combined_loss : {} , classifier_accuracy : {}".format(i,loss,acc))
+            p = norm.pdf(train.T)
+            q = norm.pdf(g_z.T)
+
+            #https://mathoverflow.net/questions/43849/how-to-ensure-the-non-negativity-of-kullback-leibler-divergence-kld-metric-rela
+            norm_p = p/p.sum(axis=1,keepdims=1)
+            norm_q = q/q.sum(axis=1,keepdims=1)
+
+            kl = kl_divergence(norm_p,norm_q)
+            tf_kl = kullback_leibler_divergence(tf.convert_to_tensor(norm_p, np.float32), tf.convert_to_tensor(norm_q, np.float32))
+            with tf.Session() as sess:
+                print("Tensorflow kullback_leibler_divergence : {}".format(round(sum(sess.run(tf_kl)))))
+
+            print("Ephoc : {} , combined_loss : {} , classifier_accuracy : {} , KL : {}".format(i,loss,acc,kl))
 
     return [combined_loss, disc_loss_generated, disc_loss_real]
 

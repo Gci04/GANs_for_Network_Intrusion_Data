@@ -36,7 +36,7 @@ combined_ep = 2000
 batch_size = 128 if len(x) > 128 else len(x)
 
 ep_d = 1
-ep_g = 2
+ep_g = 1
 learning_rate = 5e-5
 
 arguments = [rand_dim, combined_ep, batch_size, ep_d,ep_g, learning_rate, base_n_count]
