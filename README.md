@@ -2,7 +2,19 @@
 
 This repository provides a Keras-Tensorflow implementation of an approach of generating articial data to balance network Intrusion Benchmark datasets using Generative Adversarial Networks. Benchmarking datasets for Network Intrusion Detection : **KDD-99**, **NLS-KDD** and **UNSW-NB15**
 
-## Dependencies and necessary libraries
+## Prerequisites
+
+* Keras >= 2.0.8
+* TensorFlow >= 1.3.0
+* Numpy >= 1.13.3
+* Matplotlib >= 2.0.2
+* Seaborn >= 0.7.1
+* [Catboost](https://tech.yandex.com/catboost/)
+* [category_encoders](http://contrib.scikit-learn.org/categorical-encoding/index.html)
+
+All the libraries can be pip installed
+
+<!-- ## Dependencies and necessary libraries
 The list of required libraries to compile and run the repository code are as follows :
 
 ```python
@@ -12,11 +24,11 @@ The list of required libraries to compile and run the repository code are as fol
 4. category_encoders
 5. Catboost
 ```
-All the libraries can be pip installed
+All the libraries can be pip installed -->
 
 ## Repository directory layout
 
-### Repository directory layout
+<!-- ### Repository directory layout -->
 
     .
     ├── Data                 # Benchmark datasets folder
@@ -43,3 +55,5 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## Contact
 If you would like to get in touch, please contact: <br/>
 <!-- Gcinizwe Dlamini - g.dlamini@innopolis.university -->
+
+## References
