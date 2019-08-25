@@ -1,6 +1,6 @@
 # GANs for Improving Network Intrusion Benchmark Datasets
 
-This repository provides a Keras-Tensorflow implementation of an approach of generating articial data to balance network Intrusion Benchmark datasets using Generative Adversarial Networks. Benchmarking datasets for Network Intrusion Detection : **KDD-99**, **NLS-KDD** and **UNSW-NB15**
+This repository provides a Keras-Tensorflow implementation of an approach of generating artificial data to balance network Intrusion Benchmark datasets using Generative Adversarial Networks. Benchmarking datasets for Network Intrusion Detection : **KDD-99**, **NLS-KDD** and **UNSW-NB15**
 
 ## Prerequisites
 
