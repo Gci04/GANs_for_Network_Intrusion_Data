@@ -17,14 +17,14 @@ x_train = Scaler.fit_transform(x_train)
 x_test = Scaler.transform(x_test)
 
 #classification
-randf = random_forest(x_train, y_train, x_test, y_test)
-nn = neural_network(x_train, y_train, x_test, y_test, True)
+# randf = random_forest(x_train, y_train, x_test, y_test)
+# nn = neural_network(x_train, y_train, x_test, y_test, True)
 # deci = decision_tree(x_train,y_train,x_test , y_test)
 # catb = catBoost(x_train,y_train,x_test , y_test)
 # nb = naive_bayes(x_train,y_train,x_test , y_test)
 
 #Generative Adversarial Networks
-att_ind = np.where(train.label == label_mapping["u2r"])[0]
+att_ind = np.where(train.label == label_mapping["probe"])[0]
 
 x = x_train[att_ind]
 n_to_generate = 2000
@@ -44,7 +44,7 @@ res = adversarial_training_GAN(arguments,x)
 
 generated_samples = res["generator_model"].predict(np.random.normal(size=(n_to_generate,rand_dim)))
 x_train = np.vstack([x_train,generated_samples])
-y_train = np.append(y_train,np.repeat(label_mapping["u2r"],n_to_generate))
+y_train = np.append(y_train,np.repeat(label_mapping["probe"],n_to_generate))
 
 #classification after upsampling
 randf = random_forest(x_train,y_train,x_test , y_test)

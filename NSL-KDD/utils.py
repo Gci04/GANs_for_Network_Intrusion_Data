@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import os, sys
 import catboost as cat
 from sklearn.metrics import accuracy_score
+from sklearn.manifold import TSNE
+import seaborn as sns
+sns.set_style("darkgrid")
 
 import tensorflow as tf
 from keras import backend as K
@@ -16,13 +19,13 @@ from keras.losses import kullback_leibler_divergence
 def generator_network(z, data_dim, min_num_neurones):
     x = Dense(min_num_neurones, activation='tanh')(z)
     x = Dense(min_num_neurones*2, activation='tanh')(x)
-    x = Dense(min_num_neurones*4, activation='tanh')(x)
+    #x = Dense(min_num_neurones*4, activation='tanh')(x)
     # x = Dense(min_num_neurones*8, activation='tanh')(x)
     x = Dense(data_dim)(x)
     return x
 
 def discriminator_network(x, data_dim, min_num_neurones):
-    x = Dense(min_num_neurones*4, activation='tanh')(x)
+    #x = Dense(min_num_neurones*4, activation='tanh')(x)
     x = Dense(min_num_neurones*2, activation='tanh')(x)
     x = Dense(min_num_neurones, activation='tanh')(x)
     x = Dense(1, activation='sigmoid')(x)
@@ -172,6 +175,8 @@ def training_steps(model_components):
                 print("Tensorflow kullback_leibler_divergence : {}".format(round(sum(sess.run(tf_kl)))))
 
             print("Ephoc : {} , combined_loss : {} , classifier_accuracy : {} , KL : {}".format(i,loss,acc,kl))
+            print("Loss on fake: {}, Loss on real : {}".format(d_l_g, d_l_r))
+            # plt_data(train,g_z)
 
     return [combined_loss, disc_loss_generated, disc_loss_real]
 
