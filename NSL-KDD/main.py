@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 import preprocessing
 from classifiers import *
@@ -15,6 +15,11 @@ x_test , y_test =  test.drop("label",axis=1),test.label.values
 Scaler = StandardScaler()
 x_train = Scaler.fit_transform(x_train)
 x_test = Scaler.transform(x_test)
+# min_max_scaler = MinMaxScaler(feature_range=(-1, 1))
+# x_train = min_max_scaler.fit_transform(x_train)
+# x_test = min_max_scaler.transform(x_test)
+
+
 
 #classification
 # randf = random_forest(x_train, y_train, x_test, y_test)
@@ -30,9 +35,9 @@ x = x_train[att_ind]
 n_to_generate = 2000
 
 rand_dim = 32
-base_n_count = 128
+base_n_count = 50
 
-combined_ep = 2000
+combined_ep = 1000
 batch_size = 128 if len(x) > 128 else len(x)
 
 ep_d = 1
@@ -47,12 +52,14 @@ x_train = np.vstack([x_train,generated_samples])
 y_train = np.append(y_train,np.repeat(label_mapping["probe"],n_to_generate))
 
 #classification after upsampling
-randf = random_forest(x_train,y_train,x_test , y_test)
-nn = neural_network(x_train,y_train,x_test , y_test)
+# randf = random_forest(x_train,y_train,x_test , y_test)
+# nn = neural_network(x_train,y_train,x_test , y_test)
 
 #plot the loss
-plt.plot(np.arange(len(res["combined_loss"])),res["combined_loss"])
-plt.title("NLS-KDD99 Combined model Loss")
+plt.plot(np.arange(combined_ep),res["generator_loss"],label="Generator Loss")
+plt.plot(np.arange(combined_ep),res["discriminator_loss"],label="Discriminator Loss")
+plt.title("NLS-KDD99 GAN Losses")
 plt.ylabel("Loss")
 plt.xlabel("Epoch")
+plt.legend()
 plt.show()

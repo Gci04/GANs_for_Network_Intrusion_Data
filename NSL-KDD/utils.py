@@ -5,6 +5,7 @@ import os, sys
 import catboost as cat
 from sklearn.metrics import accuracy_score
 from sklearn.manifold import TSNE
+from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set_style("darkgrid")
 
@@ -12,14 +13,16 @@ import tensorflow as tf
 from keras import backend as K
 from keras.models import Model
 from keras.layers import Dense, Dropout, Input, concatenate
-from keras import optimizers
+from keras import optimizers,engine
 from scipy.stats import norm
 from keras.losses import kullback_leibler_divergence
+
+from sklearn.decomposition import PCA
 
 def generator_network(z, data_dim, min_num_neurones):
     x = Dense(min_num_neurones, activation='tanh')(z)
     x = Dense(min_num_neurones*2, activation='tanh')(x)
-    #x = Dense(min_num_neurones*4, activation='tanh')(x)
+    x = Dense(min_num_neurones*4, activation='tanh')(x)
     # x = Dense(min_num_neurones*8, activation='tanh')(x)
     x = Dense(data_dim)(x)
     return x
@@ -31,11 +34,48 @@ def discriminator_network(x, data_dim, min_num_neurones):
     x = Dense(1, activation='sigmoid')(x)
     return x
 
-def define_models_GAN(z_dim, data_dim, min_num_neurones):
+def plot_data(real,fake):
+    """
+    Visualization of the real and generated data to visualize the distribution differences.
+
+    Parameters:
+    ------------
+    real : ndarray
+        samples of the real data
+    fake : ndarray
+        samples of the generated data
+
+    Return Value : None
+    """
+    fake_pca = PCA(n_components=2)
+    fake_data = fake_pca.fit_transform(fake)
+
+    real_pca = PCA(n_components=2)
+    real_data = real_pca.fit_transform(real)
+
+    _ , ax = plt.subplots(1, 2, figsize=(8,4))
+
+    ax[0].scatter( real_data[:,0], real_data[:,1],color="g")
+    ax[1].scatter( fake_data[:,0], fake_data[:,1],color="r")
+    # ax[0].scatter( real[:,0], real[:,1],color="g")
+    # ax[1].scatter( fake[:,0], fake[:,1],color="r")
+
+    ax[0].set_title('Real')
+    ax[1].set_title('Generated')
+
+    ax[1].set_xlim(ax[0].get_xlim()), ax[1].set_ylim(ax[0].get_ylim())
+
+    # plt.show()
+    plt.show(block=False)
+    plt.pause(3)
+    plt.close()
+
+def define_models_GAN(z_dim, data_dim, min_num_neurones,learning_rate):
     """
     Put together the generator model and discriminator model (Define the full Generative Adversarial Network).
 
     Parameters:
+    -----------
     z_dim : int default = 1
         The dimmension of random noise
     data_dim : int
@@ -44,38 +84,63 @@ def define_models_GAN(z_dim, data_dim, min_num_neurones):
         The base/min count of neurones in each nn layer
 
     Return Value:
+    -------------
     generator_model : Model
         GAN generator Model (Keras model) G(z) -> x
     discriminator_model : Model
         Discriminator Model which will dertimine if a sample is fake or not. D(x)
-    combined_model : model
+    adversarial_model : model
         Generator + discriminator ==> (D(G(z)))
     """
-    generator_input = Input(shape=(z_dim, ))
-    generator_output = generator_network(generator_input, data_dim, min_num_neurones)
+    adam = optimizers.Adam(lr= learning_rate, beta_1=0.5, beta_2=0.9)
 
-    #Generated sample (fake sample)
+    # Create & Compile discriminator
     discriminator_model_input = Input(shape=(data_dim,))
     discriminator_output = discriminator_network(discriminator_model_input, data_dim, min_num_neurones)
 
-    #Generator
-    generator_model = Model(inputs=[generator_input], outputs=[generator_output], name='generator')
-    #Discriminator
-    discriminator_model = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],
-                                       name='discriminator')
+    discriminator = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],name='discriminator')
+    discriminator.compile(loss='binary_crossentropy',optimizer=adam)
 
-    #Full Network
-    combined_output = discriminator_model(generator_model(generator_input))
-    combined_model = Model(inputs=[generator_input], outputs=[combined_output], name='Full_Network')
+    # Build "frozen discriminator"
+    frozen_discriminator = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],name='frozen_discriminator')
+    frozen_discriminator.trainable = False
+    # frozen_discriminator.compile(loss='binary_crossentropy',optimizer=adam)
 
-    return generator_model, discriminator_model, combined_model
+
+    # Debug 1/3: discriminator weights
+    n_disc_trainable = len(discriminator.trainable_weights)
+
+    # Create & Compile generator
+    generator_input = Input(shape=(z_dim, ))
+    generator_output = generator_network(generator_input, data_dim, min_num_neurones)
+    generator = Model(inputs=[generator_input], outputs=[generator_output], name='generator')
+    # generator.compile(loss='binary_crossentropy',optimizer=adam)
+
+    # Debug 2/3: generator weights
+    n_gen_trainable = len(generator.trainable_weights)
+
+    # Build & compile adversarial model
+    combined_output = frozen_discriminator(generator_output)
+    # combined_output = frozen_discriminator(generator(generator_input))
+    adversarial_model = Model(inputs = [generator_input],outputs = [combined_output],name='adversarial_model')
+    adversarial_model.compile(loss='binary_crossentropy',optimizer=adam)
+
+    # Debug 3/3: compare if trainable weights correct
+    assert(len(discriminator._collected_trainable_weights) == n_disc_trainable)
+    assert(len(adversarial_model._collected_trainable_weights) == n_gen_trainable)
+
+    return generator,discriminator,adversarial_model
 
 def get_batch(X, batch_size=1):
     """
+    Parameters:
+    -----------
     X : ndarray
         The input data to sample a into batch
     size : int (default = 1)
         Batch size
+
+    Return Value: ndarray - random choice of samples from the input X of batch_size
     """
     batch_ix = np.random.choice(len(X), batch_size, replace=False)
     return X[batch_ix]
@@ -87,13 +152,16 @@ def classifierAccuracy(X,g_z,n_samples):
     means that the real samples are identical and the classifier can not differentiate.
     The classifier is trained with 0.5 n_real + 1/2 n_fake samples.
 
+    Parameters:
+    -----------
     X : ndarray
         The real samples
     g_z : ndarray
         The fake samples produced by a generator
 
     Rerurn Value:
-
+    -------------
+    accuracy : float32
     """
     y_fake = np.ones(n_samples)
     y_true = np.zeros(n_samples)
@@ -135,8 +203,6 @@ def training_steps(model_components):
             #get discriminator loss on real samples (d_l_r) and Generated/faked (d_l_g)
             d_l_r = discriminator_model.train_on_batch(x, np.random.uniform(low=0.999, high=1.0, size=batch_size))
             d_l_g = discriminator_model.train_on_batch(fake, np.random.uniform(low=0.0, high=0.0001, size=batch_size))
-            # d_l_r = discriminator_model.train_on_batch(x, np.random.uniform(low=0.0, high=0.0001, size=batch_size))
-            # d_l_g = discriminator_model.train_on_batch(fake, np.random.uniform(low=0.999, high=1.0, size=batch_size))
 
         disc_loss_real.append(d_l_r)
         disc_loss_generated.append(d_l_g)
@@ -147,7 +213,6 @@ def training_steps(model_components):
             np.random.seed(i+j)
             z = np.random.normal(size=(batch_size, rand_dim))
 
-            # loss = combined_model.train_on_batch(z, np.random.uniform(low=0.0, high=0.0001, size=batch_size))
             loss = combined_model.train_on_batch(z, np.random.uniform(low=0.999, high=1.0, size=batch_size))
 
         combined_loss.append(loss)
@@ -176,7 +241,7 @@ def training_steps(model_components):
 
             print("Ephoc : {} , combined_loss : {} , classifier_accuracy : {} , KL : {}".format(i,loss,acc,kl))
             print("Loss on fake: {}, Loss on real : {}".format(d_l_g, d_l_r))
-            # plt_data(train,g_z)
+            plot_data(train,g_z)
 
     return [combined_loss, disc_loss_generated, disc_loss_real]
 
@@ -189,16 +254,7 @@ def adversarial_training_GAN(arguments, train):
     # define network models
     K.set_learning_phase(1) # 1 = train
 
-    generator_model, discriminator_model, combined_model = define_models_GAN(rand_noise_dim, data_dim, min_num_neurones)
-
-    # compile models
-    adam = optimizers.Adam(lr=learning_rate, beta_1=0.5, beta_2=0.9)
-
-    generator_model.compile(optimizer=adam, loss='binary_crossentropy')
-    discriminator_model.compile(optimizer=adam, loss='binary_crossentropy')
-    discriminator_model.trainable = False
-    combined_model.compile(optimizer=adam, loss='binary_crossentropy')
-
+    generator_model, discriminator_model, combined_model = define_models_GAN(rand_noise_dim, data_dim, min_num_neurones,learning_rate)
 
     print(generator_model.summary())
     print(discriminator_model.summary())
@@ -212,6 +268,9 @@ def adversarial_training_GAN(arguments, train):
 
     [combined_loss, disc_loss_generated, disc_loss_real] = training_steps(model_components)
 
+    discriminator_loss = (np.array(disc_loss_real) + np.array(disc_loss_generated))/2.0
+
     return dict({"generator_model":generator_model,"discriminator_model":discriminator_model,\
-            "combined_model":combined_model,"combined_loss":combined_loss,\
-            "disc_loss_generated":disc_loss_generated,"disc_loss_real": disc_loss_real})
+            "combined_model":combined_model,"generator_loss":combined_loss,\
+            "disc_loss_generated":disc_loss_generated,"disc_loss_real": disc_loss_real,\
+            "discriminator_loss":discriminator_loss})
