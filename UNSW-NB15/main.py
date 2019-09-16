@@ -10,9 +10,9 @@ from matplotlib import pyplot as plt
 train,test, label_mapping = preprocessing.get_data()
 x_train,y_train = train.drop(["label","attack_cat"],axis=1),train.attack_cat.values
 x_test , y_test =  test.drop(["label","attack_cat"],axis=1),test.attack_cat.values
-randf = random_forest(x_train,y_train,x_test , y_test)
-deci = decision_tree(x_train,y_train,x_test , y_test)
-x_train.head()
+# randf = random_forest(x_train,y_train,x_test , y_test)
+# deci = decision_tree(x_train,y_train,x_test , y_test)
+# x_train.head()
 # #Gans
 # generate r2l attacks samples
 x = x_train.iloc[np.where(y_train == 9)[0]]
@@ -27,7 +27,7 @@ batch_size = 128
 
 ep_d = 1
 ep_g = 2
-learning_rate = 5e-5
+learning_rate = 5e-4
 
 x = StandardScaler().fit_transform(x)
 

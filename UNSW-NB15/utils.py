@@ -29,20 +29,20 @@ def define_models_GAN(z_dim, data_dim, min_num_neurones):
     Put together the generator model and discriminator model (Define the full Generative Adversarial Network).
 
     Parameters:
-    z_dim : int default = 1
-        The dimmension of random noise
-    data_dim : int
-        The dimmension/size of the original Data (which will be genarated/faked)
-    min_num_neurones : int
-        The base/min count of neurones in each nn layer
+        z_dim : int default = 1
+            The dimmension of random noise
+        data_dim : int
+            The dimmension/size of the original Data (which will be genarated/faked)
+        min_num_neurones : int
+            The base/min count of neurones in each nn layer
 
     Return Value:
-    generator_model : Model
-        GAN generator Model (Keras model) G(z) -> x
-    discriminator_model : Model
-        Discriminator Model which will dertimine if a sample is fake or not. D(x)
-    combined_model : model
-        Generator + discriminator ==> (D(G(z)))
+        generator_model : Model
+            GAN generator Model (Keras model) G(z) -> x
+        discriminator_model : Model
+            Discriminator Model which will dertimine if a sample is fake or not. D(x)
+        combined_model : model
+            Generator + discriminator ==> (D(G(z)))
     """
     generator_input = Input(shape=(z_dim, ))
     generator_output = generator_network(generator_input, data_dim, min_num_neurones)

@@ -17,3 +17,17 @@ longer. (dropped), Used PCA for visualization -- DONE
 5. Monitor the discriminator loss on real and fake datapoints : Comment -- Using probe attack
 the behaviour follows the expected behaviour. -- Not DONE
 6. Fix Keras bug with using model.trainable after compile. -- DONE
+
+-----------03.09.2018----------------
+
+1. KL-divergence for each feature -- DONE
+2. Plot top and bottom three features -- DONE
+3. optimiser change/tune -- In progress
+4. Discriminator accuracy on generated & real print (ideal is 0.5 on both) -- DONE
+5. Create ipynb for the whole Implementation and use keras Sequential model. -- DONE
+5. Try Wasserstein GAN or CGAN..(idea) -- In progress
+
+-----------10.09.2018----------------
+1. EDA
+2. Data preprocessing script
+3.
