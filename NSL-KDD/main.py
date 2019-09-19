@@ -3,9 +3,11 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from preprocessing import *
-from classifiers import *
 from utils import *
-from matplotlib import pyplot as plt
+from classifiers import *
+
+import matplotlib
+import matplotlib.pyplot as plt
 # %matplotlib inline
 
 train,test, label_mapping = get_data(encoding="Label")
@@ -24,12 +26,12 @@ data_cols = list(x_train.columns[ x_train.columns != 'label' ])
 # nb = naive_bayes(x_train,y_train,x_test , y_test)
 
 #Generative Adversarial Networks
-att_ind = np.where(train.label == label_mapping["probe"])[0]
+att_ind = np.where(x_train.label == label_mapping["probe"])[0]
 
 x = x_train[data_cols].values[att_ind]
 # x = x_train[att_ind]
 
-n_to_generate = 2000
+n_to_generate = 1000
 
 rand_dim = 32
 base_n_count = 100
@@ -39,15 +41,15 @@ batch_size = 128 if len(x) > 128 else len(x)
 
 ep_d = 1
 ep_g = 1
-learning_rate = 0.00001 #5e-5
+learning_rate = 0.0001 #5e-5
 
 arguments = [rand_dim, combined_ep, batch_size, ep_d,ep_g, learning_rate, base_n_count]
 res = adversarial_training_GAN(arguments,x)
 
 generated_samples = res["generator_model"].predict(np.random.normal(size=(n_to_generate,rand_dim)))
 
-# x_train = np.vstack([x_train[data_cols].values,generated_samples])
-# y_train = np.append(y_train,np.repeat(label_mapping["probe"],n_to_generate))
+x_train = np.vstack([x_train[data_cols].values,generated_samples])
+y_train = np.append(y_train,np.repeat(label_mapping["probe"],n_to_generate))
 
 #classification after upsampling
 # randf = random_forest(x_train,y_train,x_test , y_test)

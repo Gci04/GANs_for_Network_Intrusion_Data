@@ -114,7 +114,7 @@ def get_contant_featues(X,data_cols,threshold=0.995):
     for col in data_cols:
       val, counts = np.unique(X[col],return_counts=True)
       v = counts[0]/counts.sum()
-      if v < threshold:
+      if v > threshold:
         result.append(col)
 
     return result

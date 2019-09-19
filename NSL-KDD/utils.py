@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import os, sys
 import catboost as cat
 from sklearn.metrics import accuracy_score
@@ -73,7 +72,6 @@ def plot_data(real,fake):
 def plot_distributions(real_dist,generated_dist):
     """
     Plot top and bottom 3 based on the KL-divergence value
-
     """
 
     kl_values = np.sum(np.where(real_dist != 0, real_dist * np.log(real_dist/generated_dist),0),axis=1)
@@ -285,10 +283,10 @@ def training_steps(model_components):
             # print("Ephoc : {} , Generator loss : {} , KL : {}".format(i,loss,kl))
             # print("Loss on fake: {}, Loss on real : {}".format(d_l_g, d_l_r))
 
-            fake_pred = np.array(combined_model.predict(z)).ravel()
-            real_pred = np.array(discriminator_model.predict(train)).ravel()
+            # fake_pred = np.array(combined_model.predict(z)).ravel()
+            # real_pred = np.array(discriminator_model.predict(train)).ravel()
 
-            modelAccuracy(fake_pred,real_pred)
+            # modelAccuracy(fake_pred,real_pred)
 
             # plot_data(train,g_z)
             # plot_data(train,g_z)
