@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
-import os, sys
+import os, sys, matplotlib
 import catboost as cat
 from sklearn.metrics import accuracy_score
 from sklearn.manifold import TSNE
+
 from matplotlib import pyplot as plt
 import seaborn as sns
 sns.set_style("darkgrid")
@@ -121,15 +122,15 @@ def define_models_GAN(z_dim, data_dim, min_num_neurones,learning_rate):
         Generator + discriminator ==> (D(G(z)))
     """
     adam = optimizers.Adam(lr= learning_rate, beta_1=0.5, beta_2=0.9)
-    rmsprop = optimizers.RMSprop(lr=0.0001)
-    sgd = optimizers.SGD(lr=0.01, clipvalue=0.5)
+    rmsprop = optimizers.RMSprop(lr=learning_rate)
+    sgd = optimizers.SGD(lr=learning_rate, clipvalue=0.5)
 
     # Create & Compile discriminator
     discriminator_model_input = Input(shape=(data_dim,))
     discriminator_output = discriminator_network(discriminator_model_input, data_dim, min_num_neurones)
 
     discriminator = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],name='discriminator')
-    discriminator.compile(loss='binary_crossentropy',optimizer=adam)
+    discriminator.compile(loss='binary_crossentropy',optimizer=sgd)
 
     # Build "frozen discriminator"
     frozen_discriminator = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],name='frozen_discriminator')
@@ -153,7 +154,7 @@ def define_models_GAN(z_dim, data_dim, min_num_neurones,learning_rate):
     combined_output = frozen_discriminator(generator_output)
     # combined_output = frozen_discriminator(generator(generator_input))
     adversarial_model = Model(inputs = [generator_input],outputs = [combined_output],name='adversarial_model')
-    adversarial_model.compile(loss='binary_crossentropy',optimizer=adam)
+    adversarial_model.compile(loss='binary_crossentropy',optimizer=sgd)
 
     # Debug 3/3: compare if trainable weights correct
     assert(len(discriminator._collected_trainable_weights) == n_disc_trainable)
@@ -179,7 +180,7 @@ def get_batch(X, batch_size=1):
 def classifierAccuracy(X,g_z,n_samples):
     """
     Check how good are the generated samples using a catboost classifier. 50% accuracy
-    means that the real samples are identical and the classifier can not differentiate.
+    implies that the real samples are identical and the classifier can not differentiate.
     The classifier is trained with 0.5 n_real + 1/2 n_fake samples.
 
     Parameters:
@@ -229,6 +230,7 @@ def training_steps(model_components):
     [train, data_dim,generator_model, discriminator_model, combined_model,rand_dim, nb_steps,
     batch_size, D_epochs, G_epochs,combined_loss, disc_loss_generated, disc_loss_real] = model_components
 
+    matplotlib.use('TkAgg')
     for i in range(nb_steps):
         K.set_learning_phase(1)
 
@@ -251,8 +253,8 @@ def training_steps(model_components):
         #train generator
         loss = None
         for j in range(G_epochs):
-            np.random.seed(i+j)
-            z = np.random.normal(size=(batch_size, rand_dim))
+            # np.random.seed(i+j)
+            # z = np.random.normal(size=(batch_size, rand_dim))
 
             loss = combined_model.train_on_batch(z, np.random.uniform(low=0.999, high=1.0, size=batch_size))
 
@@ -283,10 +285,10 @@ def training_steps(model_components):
             # print("Ephoc : {} , Generator loss : {} , KL : {}".format(i,loss,kl))
             # print("Loss on fake: {}, Loss on real : {}".format(d_l_g, d_l_r))
 
-            # fake_pred = np.array(combined_model.predict(z)).ravel()
-            # real_pred = np.array(discriminator_model.predict(train)).ravel()
+            fake_pred = np.array(combined_model.predict(z)).ravel()
+            real_pred = np.array(discriminator_model.predict(train)).ravel()
 
-            # modelAccuracy(fake_pred,real_pred)
+            modelAccuracy(fake_pred,real_pred)
 
             # plot_data(train,g_z)
             # plot_data(train,g_z)

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-import sys, os , warnings , pandas_profiling
+import sys, os , warnings
+import pandas_profiling
 from collections import defaultdict
 from sklearn.preprocessing import LabelEncoder, StandardScaler ,MinMaxScaler,RobustScaler, PowerTransformer
 from category_encoders import *
@@ -9,7 +10,7 @@ warnings.filterwarnings('ignore')
 
 data_folder = "../Data/NSL-KDD"
 
-def get_data(encoding = 'Label'):
+def get_data(encoding = 'Label', data_folder = "../Data/NSL-KDD"):
     features = None
     with open('features.txt', 'r') as f:
       features = f.read().split('\n')

@@ -28,6 +28,10 @@ the behaviour follows the expected behaviour. -- Not DONE
 5. Try Wasserstein GAN or CGAN..(idea) -- In progress
 
 -----------10.09.2018----------------
-1. EDA
-2. Data preprocessing script
-3.
+1. EDA - DONE
+2. Data preprocessing script - DONE
+
+-----------17.09.2018----------------
+1. Hyperparamaters tuning script - DONE
+2. Analyse Hyperparamaters tuning results - In progress
+3. Implement CGAN s
