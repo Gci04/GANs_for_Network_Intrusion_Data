@@ -3,7 +3,6 @@ import pandas as pd
 import os, sys, matplotlib
 import catboost as cat
 from sklearn.metrics import accuracy_score
-from sklearn.manifold import TSNE
 
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -71,9 +70,7 @@ def plot_data(real,fake):
     plt.close()
 
 def plot_distributions(real_dist,generated_dist):
-    """
-    Plot top and bottom 3 based on the KL-divergence value
-    """
+    """Plot top and bottom 3 based on the KL-divergence value"""
 
     kl_values = np.sum(np.where(real_dist != 0, real_dist * np.log(real_dist/generated_dist),0),axis=1)
     top_3 = np.argsort(kl_values)[:3]
@@ -100,8 +97,7 @@ def plot_distributions(real_dist,generated_dist):
     plt.close()
 
 def define_models_GAN(z_dim, data_dim, min_num_neurones,learning_rate):
-    """
-    Put together the generator model and discriminator model (Define the full Generative Adversarial Network).
+    """Put together the generator model and discriminator model (Define the full Generative Adversarial Network).
 
     Parameters:
     -----------
@@ -119,8 +115,8 @@ def define_models_GAN(z_dim, data_dim, min_num_neurones,learning_rate):
     discriminator_model : Model
         Discriminator Model which will dertimine if a sample is fake or not. D(x)
     adversarial_model : model
-        Generator + discriminator ==> (D(G(z)))
-    """
+        Generator + discriminator ==> (D(G(z)))"""
+
     adam = optimizers.Adam(lr= learning_rate, beta_1=0.5, beta_2=0.9)
     rmsprop = optimizers.RMSprop(lr=learning_rate)
     sgd = optimizers.SGD(lr=learning_rate, clipvalue=0.5)
@@ -136,7 +132,6 @@ def define_models_GAN(z_dim, data_dim, min_num_neurones,learning_rate):
     frozen_discriminator = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],name='frozen_discriminator')
     frozen_discriminator.trainable = False
     # frozen_discriminator.compile(loss='binary_crossentropy',optimizer=adam)
-
 
     # Debug 1/3: discriminator weights
     n_disc_trainable = len(discriminator.trainable_weights)
@@ -213,17 +208,26 @@ def classifierAccuracy(X,g_z,n_samples):
     return np.round(accuracy,decimals=3)
 
 def kl_divergence(p, q):
+    """calculates the KL-divergence between 2 data samples using their distributions"""
     return np.sum(np.where(p != 0, p * np.log(p/q),0))
 
 def modelAccuracy(gen_pred,real_pred):
+    """calculates the discriminator's accuracy on real and generated samples
+    :param gen_pred : predictions for generated samples
+    :type gen_pred : ndarray (numpy)
+    :param real_pred : predictions for real samples
+    :type real_pred : ndarray (numpy)
+    :return : accuracy_on_generated , accuracy_on_generated
+    :rtype : float
+    """
     gen_pred = np.array([1.0 if i > 0.5 else 0.0 for i in gen_pred])
     gen_true = np.zeros(len(gen_pred))
 
     real_pred = np.array([1.0 if i > 0.5 else 0.0 for i in real_pred])
     real_true = np.ones(len(gen_pred))
 
-    print('Discriminator accuracy on Fake : {}, Real : {}'.format(accuracy_score(gen_pred,gen_true),accuracy_score(real_pred,real_true)))
-
+    # print('Discriminator accuracy on Fake : {}, Real : {}'.format(accuracy_score(gen_pred,gen_true),accuracy_score(real_pred,real_true)))
+    return accuracy_score(gen_pred,gen_true)*100, accuracy_score(real_pred,real_true)*100
 
 def training_steps(model_components):
 
@@ -288,10 +292,7 @@ def training_steps(model_components):
             fake_pred = np.array(combined_model.predict(z)).ravel()
             real_pred = np.array(discriminator_model.predict(train)).ravel()
 
-            modelAccuracy(fake_pred,real_pred)
-
-            # plot_data(train,g_z)
-            # plot_data(train,g_z)
+            _ , _ = modelAccuracy(fake_pred,real_pred)
             plot_distributions(norm_p,norm_q)
 
     return [combined_loss, disc_loss_generated, disc_loss_real]

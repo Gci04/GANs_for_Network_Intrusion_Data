@@ -34,4 +34,12 @@ the behaviour follows the expected behaviour. -- Not DONE
 -----------17.09.2018----------------
 1. Hyperparamaters tuning script - DONE
 2. Analyse Hyperparamaters tuning results - In progress
-3. Implement CGAN s
+3. Implement CGAN -- DONE
+
+-----------01.10.2018----------------
+1. KL-divergence plot
+2. plot discriminator accuracy
+3. write script for tuning
+4. Code Refactoring
+
+-----------08.10.2018----------------
