@@ -132,3 +132,17 @@ class CGAN():
 
             #Print metrices
             print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
+
+    def save_model_componets(self,dir):
+        """Dumps the training history to pickle file and GAN to .h5 file """
+        H = defaultdict(dict)
+        H["acc_history"] = self.acc_history.tolist()
+        H["G_loss"] = self.combined_loss
+        H["disc_loss_real"] = self.disc_loss_real
+        H["disc_loss_real"] = self.disc_loss_generated
+        H["disc_loss"] = self.discriminator_loss
+
+        with open(dir+"/cgan_history.pickle", "wb") as output_file:
+            pickle.dump(H,output_file)
+
+        self.combined_model.save(dir+"/cgan_combined_model.h5")

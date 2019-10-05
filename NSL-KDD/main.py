@@ -2,29 +2,37 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
-from preprocessing import *
-from utils import *
-from classifiers import *
-from cgan import *
-from VannilaGan import *
+import preprocessing
+import utils
+import classifiers as clf
+import cgan
+import VannilaGan
 from tensorflow.keras.utils import to_categorical
 
 import matplotlib.pyplot as plt
 
 #-------------------- Load Data ----------------------------#
-train,test, label_mapping = get_data(encoding="Label")
+train,test, label_mapping = preprocessing.get_data(encoding="Label")
 data_cols = list(train.columns[ train.columns != 'label' ])
-x_train , x_test = preprocess(train,test,data_cols,"Robust",True)
+x_train , x_test = preprocessing.preprocess(train,test,data_cols,"Robust",True)
+
 y_train = x_train.label.values
 y_test = x_test.label.values
+
+data_cols = list(x_train.columns[ x_train.columns != 'label' ])
+
+to_drop = preprocessing.get_contant_featues(x_train,data_cols)
+x_train.drop(to_drop, axis=1,inplace=True)
+x_test.drop(to_drop, axis=1,inplace=True)
+
 data_cols = list(x_train.columns[ x_train.columns != 'label' ])
 
 #---------------------classification ------------------------#
-# randf = random_forest(x_train, y_train, x_test, y_test)
-# nn = neural_network(x_train[data_cols], y_train, x_test[data_cols], y_test,True)
-# deci = decision_tree(x_train,y_train,x_test , y_test)
-# catb = catBoost(x_train,y_train,x_test , y_test)
-# nb = naive_bayes(x_train,y_train,x_test , y_test)
+# randf = clf.random_forest(x_train, y_train, x_test, y_test)
+# nn = clf.neural_network(x_train[data_cols], y_train, x_test[data_cols], y_test,True)
+# deci = clf.decision_tree(x_train,y_train,x_test , y_test)
+# catb = clf.catBoost(x_train,y_train,x_test , y_test)
+# nb = clf.naive_bayes(x_train,y_train,x_test , y_test)
 
 #---------------Generative Adversarial Networks -------------#
 att_ind = np.where(x_train.label != label_mapping["normal"])[0]
@@ -33,16 +41,16 @@ x = x_train[data_cols].values[att_ind]
 #---------------------Set GAN parameters--------------------#
 rand_dim = 32
 base_n_count = 50
-combined_ep = 1000
+combined_ep = 2000
 batch_size = 128 if len(x) > 128 else len(x)
 ep_d = 1
 ep_g = 1
 learning_rate = 0.001 #5e-5
 
 #--------------------Define & Train GANS-----------------------#
-
+#
 # arguments = [rand_dim, combined_ep, batch_size, ep_d,ep_g, learning_rate, base_n_count]
-# res = adversarial_training_GAN(arguments,x)
+# res = utils.adversarial_training_GAN(arguments,x)
 #
 # generated_samples = res["generator_model"].predict(np.random.normal(size=(n_to_generate,rand_dim)))
 #
@@ -63,16 +71,16 @@ learning_rate = 0.001 #5e-5
 # plt.show()
 
 #-------- Vannila GAN ---------#
-args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
-
-vanilla_gan = Vannila_GAN(args,x)
-vanilla_gan.train()
+# args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
+#
+# vanilla_gan = VannilaGan.Vannila_GAN(args,x)
+# vanilla_gan.train()
 
 #------- Conditional GAN ------#
 #
-# args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
-#
-# cgan = CGAN(args,x_train.values,y_train.reshape(-1,1))
-# cgan.train()
+args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
+
+cgan = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
+cgan.train()
 
 #-------- Wasserstein GAN -------#

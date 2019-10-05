@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import sys, os , warnings
 import pandas_profiling
-from collections import defaultdict
 from sklearn.preprocessing import LabelEncoder, StandardScaler ,MinMaxScaler,RobustScaler, PowerTransformer
 from category_encoders import *
 

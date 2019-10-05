@@ -1,4 +1,8 @@
 import numpy as np
+import matplotlib, pickle
+from matplotlib import pyplot as plt
+from sklearn.metrics import accuracy_score
+from collections import defaultdict
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -20,7 +24,7 @@ class Vannila_GAN():
 
         self.sgd = optimizers.SGD(lr=self.learning_rate)
 
-        self.disc_loss_real, self.disc_loss_generated = [], []
+        self.disc_loss_real, self.disc_loss_generated , self.discriminator_loss= [], [], []
         self.generator, self.discriminator, self.combined_model = None, None, None
         self.combined_loss = []
 
@@ -89,10 +93,14 @@ class Vannila_GAN():
         assert(len(self.discriminator._collected_trainable_weights) == n_disc_trainable)
         assert(len(self.combined_model._collected_trainable_weights) == n_gen_trainable)
 
-    def train(self):
-        # matplotlib.use('TkAgg')
+    def train(self,plot_dist = False):
+        matplotlib.use('TkAgg')
         real_labels = np.ones((self.batch_size, 1))
         fake_labels = np.zeros((self.batch_size, 1))
+
+        if plot_dist :
+            p = utils.norm.pdf(self.X_train.T)
+            norm_p = p/p.sum(axis=1,keepdims=1)
 
         for i in range(self.tot_epochs):
             K.set_learning_phase(1)
@@ -114,6 +122,7 @@ class Vannila_GAN():
 
             self.disc_loss_real.append(d_l_r)
             self.disc_loss_generated.append(d_l_g)
+            self.discriminator_loss.append(d_loss)
 
             #train generator
             loss = None
@@ -139,26 +148,49 @@ class Vannila_GAN():
                 acc_g, acc_r = utils.modelAccuracy(fake_pred,real_pred)
                 self.acc_history.append([acc_g, acc_r])
 
-                p = utils.norm.pdf(self.X_train.T)
                 q = utils.norm.pdf(g_z.T)
-
-                norm_p = p/p.sum(axis=1,keepdims=1)
                 norm_q = q/q.sum(axis=1,keepdims=1)
 
-                kl2 = np.sum(np.where(norm_p != 0, norm_p * np.log(norm_p/norm_q),0))
+                if plot_dist :
+                    utils.plot_distributions(norm_p,norm_q)
 
-                # tf_kl = utils.kullback_leibler_divergence(tf.convert_to_tensor(norm_p, np.float32), tf.convert_to_tensor(norm_q, np.float32))
-                # with tf.Session() as sess:
-                #     kl = sum(sess.run(tf_kl))
-                #     self.kl_history.append(kl)
+                kl = np.sum(np.where(norm_p != 0, norm_p * np.log(norm_p/norm_q),0))
 
-                print("Epoch : {:d} [D loss : {:.4f}, acc_fake : {:.4f}, acc_real : {:.4f}] [G loss : {:.4f}], KL : {:.4f}".format(i, d_loss,acc_g ,acc_r, g_loss,kl2))
+                print("Epoch : {:d} [D loss : {:.4f}, acc_fake : {:.4f}, acc_real : {:.4f}] [G loss : {:.4f}], KL : {:.4f}".format(i, d_loss,acc_g ,acc_r, g_loss,kl))
+
+        self.acc_history = np.array(self.acc_history)
 
     def save_model_componets(self,dir):
-        pass
+        """Dumps the training history to pickle file and GAN to .h5 file """
+        H = defaultdict(dict)
+        H["acc_history"] = self.acc_history.tolist()
+        H["G_loss"] = self.combined_loss
+        H["disc_loss_real"] = self.disc_loss_real
+        H["disc_loss_real"] = self.disc_loss_generated
+        H["disc_loss"] = self.discriminator_loss
+
+        with open(dir+"/gan_history.pickle", "wb") as output_file:
+            pickle.dump(H,output_file)
+
+        self.combined_model.save(dir+"/gan_combined_model.h5")
+
     def plot_model_losses(self):
-        pass
+        """Plot the the models losses"""
+        x = np.arange(self.tot_epochs)
+        plt.plot(x,self.combined_loss,label="Generator Loss")
+        plt.plot(x,self.discriminator_loss,label="Discriminator Loss")
+        plt.title("NLS-KDD99 GAN Losses")
+        plt.ylabel("Loss")
+        plt.xlabel("Epoch")
+        plt.legend()
+        plt.show()
+
     def plot_model_acc_history(self):
-        pass
-    def plot_distributions(self):
-        pass
+        x = np.arange(0,100,10)
+        plt.plot(x,self.acc_history[:,0],label="Acc D(G(z))")
+        plt.plot(x,self.self.acc_history[:,1],label="Acc D(x)")
+        plt.title("Discriminator accuracy")
+        plt.ylabel("Accuracy")
+        plt.xlabel("Epoch #")
+        plt.legend()
+        plt.show()

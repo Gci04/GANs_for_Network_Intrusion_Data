@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import os, sys, matplotlib
 import catboost as cat
-from sklearn.metrics import accuracy_score
 
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -18,6 +17,7 @@ from keras.losses import kullback_leibler_divergence
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
 
 def generator_network(z, data_dim, min_num_neurones):
     x = Dense(min_num_neurones, activation='tanh')(z)
@@ -292,7 +292,8 @@ def training_steps(model_components):
             fake_pred = np.array(combined_model.predict(z)).ravel()
             real_pred = np.array(discriminator_model.predict(train)).ravel()
 
-            _ , _ = modelAccuracy(fake_pred,real_pred)
+            a , b = modelAccuracy(fake_pred,real_pred)
+            print("Ephoc : {:d} [D acc_real : {:.3f}, acc_gen : {:.3f} ] [G Loss : {:.4f}] ".format(i,b,a,loss))
             plot_distributions(norm_p,norm_q)
 
     return [combined_loss, disc_loss_generated, disc_loss_real]
