@@ -23,6 +23,9 @@ class CGAN():
 
         self.g_losses = []
         self.d_losses, self.disc_loss_real, self.disc_loss_generated = [], [], []
+        self.acc_history = []
+        self.gan_name = '_'.join(str(e) for e in arguments).replace(".","")
+
         self.__define_models()
 
     def build_generator(self,x,labels):
@@ -116,9 +119,10 @@ class CGAN():
                 d_loss_real = self.discriminator.train_on_batch(np.concatenate((x,labels),axis=1), real_labels)
                 d_loss = 0.5 * np.add(d_loss_real,d_loss_fake)
 
-            self.disc_loss_real.append(d_loss_real)
-            self.disc_loss_generated.append(d_loss_fake)
+            self.disc_loss_real.append(d_loss_real[0])
+            self.disc_loss_generated.append(d_loss_fake[0])
             self.d_losses.append(d_loss[0])
+            self.acc_history.append(100*d_loss[1])
 
             #Train Generator (generator in combined model is trainable while discrimnator is frozen)
             for j in range(self.G_epochs):
@@ -128,21 +132,27 @@ class CGAN():
 
                 #Train the generator
                 g_loss = self.combined.train_on_batch([noise, sampled_labels], real_labels)
-                self.g_losses.append(g_loss)
+                self.g_losses.append(g_loss[0])
 
             #Print metrices
             print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
 
-    def save_model_componets(self,dir):
-        """Dumps the training history to pickle file and GAN to .h5 file """
+    def dump_to_file(self,save_dir = "./logs"):
+        """Dumps the training history and GAN config to pickle file """
+
         H = defaultdict(dict)
-        H["acc_history"] = self.acc_history.tolist()
-        H["G_loss"] = self.combined_loss
+        H["acc_history"] = self.acc_history
+        H["Generator_loss"] = self.g_losses
         H["disc_loss_real"] = self.disc_loss_real
         H["disc_loss_real"] = self.disc_loss_generated
-        H["disc_loss"] = self.discriminator_loss
+        H["discriminator_loss"] = self.d_losses
+        H["rand_noise_dim"] , H["total_epochs"] = self.rand_noise_dim, self.tot_epochs
+        H["batch_size"] , H["learning_rate"]  = self.batch_size, self.learning_rate
+        H["n_layers"] , H["activation"]  = self.n_layers, self.activation
+        H["optimizer"] , H["min_num_neurones"] = self.optimizer, self.min_num_neurones
 
-        with open(dir+"/cgan_history.pickle", "wb") as output_file:
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        with open(f"{save_dir}/CGAN_{self.gan_name}{'.pickle'}", "wb") as output_file:
             pickle.dump(H,output_file)
-
-        self.combined_model.save(dir+"/cgan_combined_model.h5")
