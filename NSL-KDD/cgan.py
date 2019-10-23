@@ -139,12 +139,11 @@ class CGAN():
 
     def dump_to_file(self,save_dir = "./logs"):
         """Dumps the training history and GAN config to pickle file """
-
         H = defaultdict(dict)
         H["acc_history"] = self.acc_history
         H["Generator_loss"] = self.g_losses
         H["disc_loss_real"] = self.disc_loss_real
-        H["disc_loss_real"] = self.disc_loss_generated
+        H["disc_loss_gen"] = self.disc_loss_generated
         H["discriminator_loss"] = self.d_losses
         H["rand_noise_dim"] , H["total_epochs"] = self.rand_noise_dim, self.tot_epochs
         H["batch_size"] , H["learning_rate"]  = self.batch_size, self.learning_rate

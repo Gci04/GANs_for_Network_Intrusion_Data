@@ -12,7 +12,6 @@ import os, pickle
 
 class WGAN(object):
     """Wasserstein Generative Adversarial Network Class"""
-
     def __init__(self, args,X,y):
         [self.rand_noise_dim, self.tot_epochs, self.batch_size,self.D_epochs,\
          self.G_epochs, self.learning_rate, self.min_num_neurones] = args
@@ -26,11 +25,13 @@ class WGAN(object):
         self.sgd = optimizers.SGD(lr=self.learning_rate)
 
         self.g_losses = []
-        self.d_losses, self.disc_loss_real, self.disc_loss_generated = [], [], []
+        self.critic_losses, self.critic_loss_real, self.critic_loss_generated = [], [], []
+        self.accuracy_real, self.accuracy_gen = [], []
 
         self.__define_models()
+        self.gan_name = '_'.join(str(e) for e in args).replace('.','')
 
-        self.clip_value = 0.5
+        self.clip_value = 0.08
 
     def wasserstein_loss(self,y_true, y_pred):
         """define earth mover distance (wasserstein loss)"""
@@ -48,7 +49,6 @@ class WGAN(object):
 
     def define_critic(self,x):
         """Build a critic"""
-
         x = Dense(self.min_num_neurones*4, activation='tanh')(x)
         x = Dense(self.min_num_neurones*2, activation='tanh')(x)
         x = Dense(self.min_num_neurones, activation='tanh')(x)
@@ -58,7 +58,6 @@ class WGAN(object):
 
     def __define_models(self):
         """Define Generator, Discriminator & combined model"""
-
         # Create & Compile generator
         generator_input = Input(shape=(self.rand_noise_dim,))
         labels_tensor = Input(shape=(self.label_dim,))
@@ -116,9 +115,9 @@ class WGAN(object):
                     weights = [np.clip(weight, -self.clip_value, self.clip_value) for weight in weights]
                     layer.set_weights(weights)
 
-            self.disc_loss_real.append(d_loss_real)
-            self.disc_loss_generated.append(d_loss_fake)
-            self.d_losses.append(d_loss)
+            self.critic_loss_real.append(d_loss_real)
+            self.critic_loss_generated.append(d_loss_fake)
+            self.critic_losses.append(d_loss)
 
             #Train Generator (generator in combined model is trainable while discrimnator is frozen)
             for j in range(self.G_epochs):
@@ -136,14 +135,30 @@ class WGAN(object):
                 y_pred = self.critic_network.predict(np.concatenate((self.X_train,self.y_train),axis=1))
                 y_pred = [-1 if i < 0 else 1 for i in y_pred.ravel()]
                 real_acc = accuracy_score(-np.ones(n),y_pred) * 100
+                self.accuracy_real.append(real_acc)
 
                 z = np.random.normal(0, 1, (n, self.rand_noise_dim))
                 s_labels = np.random.choice([0,2,3,4],(n,1), replace=True)
                 y_pred = self.combined.predict([z, s_labels])
                 y_pred = [-1 if i < 0.0 else 1 for i in y_pred.ravel()]
                 fake_acc = accuracy_score(y_pred,np.ones(n)) * 100
+                self.accuracy_gen.append(fake_acc)
 
                 print ("Epoch : {:d} [critic loss: {:.4f}, acc(real) : {:.4f}, acc(fake) : {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss, real_acc, fake_acc, g_loss))
 
-    def save_model_config():
-        pass
+    def save_model_config(self,save_dir="./wcgan_logs"):
+        H = defaultdict(dict)
+        H["critic_acc_generated"] = self.accuracy_gen
+        H["critic_acc_real"] = self.accuracy_real
+        H["Generator_loss"] = self.g_losses
+        H["critic_loss_real"] = self.critic_loss_real
+        H["critic_loss_gen"] = self.critic_loss_generated
+        H["critic_loss"] = self.critic_losses
+        H["rand_noise_dim"] , H["total_epochs"] = self.rand_noise_dim, self.tot_epochs
+        H["batch_size"] , H["learning_rate"]  = self.batch_size, self.learning_rate
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        with open(f"{save_dir}/wcgan_{self.gan_name}{'.pickle'}", "wb") as output_file:
+            pickle.dump(H,output_file)

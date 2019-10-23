@@ -166,7 +166,7 @@ class Vannila_GAN():
         H["acc_history"] = self.acc_history.tolist()
         H["G_loss"] = self.combined_loss
         H["disc_loss_real"] = self.disc_loss_real
-        H["disc_loss_real"] = self.disc_loss_generated
+        H["disc_loss_gen"] = self.disc_loss_generated
         H["disc_loss"] = self.discriminator_loss
 
         with open(dir+"/gan_history.pickle", "wb") as output_file:

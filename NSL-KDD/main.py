@@ -41,7 +41,7 @@ y = y_train[att_ind]
 #---------------------Set GAN parameters--------------------#
 rand_dim = 32
 base_n_count = 50
-combined_ep = 2000
+combined_ep = 100
 batch_size = 128 if len(x) > 128 else len(x)
 ep_d = 1
 ep_g = 1
@@ -90,3 +90,4 @@ args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count
 
 wcgan = wgan.WGAN(args,x,y.reshape(-1,1))
 wcgan.train()
+wcgan.save_model_config()
