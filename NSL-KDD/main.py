@@ -46,6 +46,8 @@ batch_size = 128 if len(x) > 128 else len(x)
 ep_d = 1
 ep_g = 1
 learning_rate = 0.001 #5e-5
+Optimizer = 'sgd'
+activation = 'tanh'
 
 #--------------------Define & Train GANS-----------------------#
 #
@@ -71,23 +73,24 @@ learning_rate = 0.001 #5e-5
 # plt.show()
 
 #-------- Vannila GAN ---------#
-# args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
+# args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, activation, Optimizer, learning_rate, base_n_count]
 #
 # vanilla_gan = VannilaGan.Vannila_GAN(args,x)
 # vanilla_gan.train()
+# vanilla_gan.save_model_componets()
 
 #------- Conditional GAN ------#
-#
-# args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
-#
-# cgan = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
-# cgan.train()
+args = [rand_dim, combined_ep, batch_size, ep_d,ep_g, activation, Optimizer, learning_rate, base_n_count]
+
+cgan = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
+cgan.train()
+cgan.dump_to_file()
 
 #-------- Wasserstein GAN -------#
-ep_d = 5
-learning_rate = 0.0001
-args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
-
-wcgan = wgan.WGAN(args,x,y.reshape(-1,1))
-wcgan.train()
-wcgan.save_model_config()
+# ep_d = 5
+# learning_rate = 0.0001
+# args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
+#
+# wcgan = wgan.WGAN(args,x,y.reshape(-1,1))
+# wcgan.train()
+# wcgan.save_model_config()

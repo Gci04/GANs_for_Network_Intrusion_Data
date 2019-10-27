@@ -8,7 +8,7 @@ sns.set_style("darkgrid")
 %matplotlib inline
 # a = os.listdir('logs')
 
-( _, _, filenames) = next(os.walk('logs'))
+( _, _, filenames) = next(os.walk('NSL-KDD/logs'))
 
 
 def plot_summary(d_l, g_l,acc, m =''):
@@ -32,12 +32,14 @@ def plot_summary(d_l, g_l,acc, m =''):
     axs[1].tick_params(labelsize=20)
 
     plt.tight_layout()
-    plt.savefig(f'imgs/{m[:-7]}.png',dpi = 300)
+    if not os.path.exists("NSL-KDD/imgs"):
+        os.makedirs('NSL-KDD/imgs')
+    plt.savefig(f'NSL-KDD/imgs/{m[:-7]}.png',dpi = 300)
     plt.close('all') #plt.close(fig)
 
 
 for filename in filenames :
-    with open('logs/'+filename, 'rb') as f:
+    with open('NSL-KDD/logs/'+filename, 'rb') as f:
         x = pickle.load(f)
 
     d_l = np.array(x['discriminator_loss']).ravel()

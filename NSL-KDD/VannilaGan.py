@@ -1,14 +1,14 @@
 import numpy as np
-import matplotlib, pickle
+import matplotlib, pickle, os
 from matplotlib import pyplot as plt
 from sklearn.metrics import accuracy_score
 from collections import defaultdict
 
 import tensorflow as tf
-from tensorflow.keras import backend as K
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, Input, concatenate
-from tensorflow.keras import optimizers
+from keras import backend as K
+from keras.models import Model
+from keras.layers import Dense, Input, concatenate
+from keras import optimizers
 
 import utils
 
@@ -17,7 +17,7 @@ class Vannila_GAN():
 
     def __init__(self,arguments,X):
         [self.rand_noise_dim, self.tot_epochs, self.batch_size,self.D_epochs,\
-         self.G_epochs, self.learning_rate, self.min_num_neurones] = arguments
+         self.G_epochs, self.activation_f, self.optimizer, self.learning_rate, self.min_num_neurones] = arguments
 
         self.X_train = X
         self.x_data_dim = X.shape[1]
@@ -35,18 +35,18 @@ class Vannila_GAN():
 
     def generator_network(self,x):
         """generator model definition"""
-        x = Dense(self.min_num_neurones, activation='tanh')(x)
-        x = Dense(self.min_num_neurones*2, activation='tanh')(x)
-        x = Dense(self.min_num_neurones*4, activation='tanh')(x)
+        x = Dense(self.min_num_neurones, activation=self.activation_f)(x)
+        x = Dense(self.min_num_neurones*2, activation=self.activation_f)(x)
+        x = Dense(self.min_num_neurones*4, activation=self.activation_f)(x)
         x = Dense(self.x_data_dim,activation='linear')(x)
 
         return x
 
     def discriminator_network(self,x):
         """discriminator model definition"""
-        x = Dense(self.min_num_neurones*4, activation='tanh')(x)
-        x = Dense(self.min_num_neurones*2, activation='tanh')(x)
-        x = Dense(self.min_num_neurones, activation='tanh')(x)
+        x = Dense(self.min_num_neurones*4, activation=self.activation_f)(x)
+        x = Dense(self.min_num_neurones*2, activation=self.activation_f)(x)
+        x = Dense(self.min_num_neurones, activation=self.activation_f)(x)
         x = Dense(1, activation='sigmoid')(x)
 
         return x
@@ -64,7 +64,8 @@ class Vannila_GAN():
         discriminator_output = self.discriminator_network(discriminator_model_input)
 
         self.discriminator = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],name='discriminator')
-        self.discriminator.compile(loss='binary_crossentropy',optimizer=self.sgd)
+        self.discriminator.compile(loss='binary_crossentropy',optimizer=self.optimizer)
+        K.set_value(self.discriminator.optimizer.lr,self.learning_rate)
 
         # Build "frozen discriminator"
         frozen_discriminator = Model(inputs=[discriminator_model_input],outputs=[discriminator_output],name='frozen_discriminator')
@@ -78,8 +79,8 @@ class Vannila_GAN():
         generator_input = Input(shape=(self.rand_noise_dim, ))
         generator_output = self.generator_network(generator_input)
         self.generator = Model(inputs=[generator_input], outputs=[generator_output], name='generator')
-        self.generator.compile(loss='binary_crossentropy',optimizer=self.sgd)
-
+        self.generator.compile(loss='binary_crossentropy',optimizer=self.optimizer)
+        K.set_value(self.generator.optimizer.lr,self.learning_rate)
         # Debug 2/3: generator weights
         n_gen_trainable = len(self.generator.trainable_weights)
 
@@ -87,7 +88,8 @@ class Vannila_GAN():
         combined_output = frozen_discriminator(generator_output)
 
         self.combined_model = Model(inputs = [generator_input],outputs = [combined_output],name='combined_model')
-        self.combined_model.compile(loss='binary_crossentropy',optimizer=self.sgd)
+        self.combined_model.compile(loss='binary_crossentropy',optimizer=self.optimizer)
+        K.set_value(self.combined_model.optimizer.lr,self.learning_rate)
 
         # Debug 3/3: compare if trainable weights correct
         assert(len(self.discriminator._collected_trainable_weights) == n_disc_trainable)
@@ -98,9 +100,8 @@ class Vannila_GAN():
         real_labels = np.ones((self.batch_size, 1))
         fake_labels = np.zeros((self.batch_size, 1))
 
-        if plot_dist :
-            p = utils.norm.pdf(self.X_train.T)
-            norm_p = p/p.sum(axis=1,keepdims=1)
+        p = utils.norm.pdf(self.X_train.T)
+        norm_p = p/p.sum(axis=1,keepdims=1)
 
         for i in range(self.tot_epochs):
             K.set_learning_phase(1)
@@ -160,7 +161,7 @@ class Vannila_GAN():
 
         self.acc_history = np.array(self.acc_history)
 
-    def save_model_componets(self,dir):
+    def save_model_componets(self,dir='vannilaGanLogs'):
         """Dumps the training history to pickle file and GAN to .h5 file """
         H = defaultdict(dict)
         H["acc_history"] = self.acc_history.tolist()
@@ -168,6 +169,9 @@ class Vannila_GAN():
         H["disc_loss_real"] = self.disc_loss_real
         H["disc_loss_gen"] = self.disc_loss_generated
         H["disc_loss"] = self.discriminator_loss
+
+        if not os.path.exists(dir):
+            os.makedirs(dir)
 
         with open(dir+"/gan_history.pickle", "wb") as output_file:
             pickle.dump(H,output_file)

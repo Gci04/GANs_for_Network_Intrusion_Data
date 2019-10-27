@@ -1,10 +1,10 @@
 import numpy as np
 
 import tensorflow as tf
-from tensorflow.keras import backend as K
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, Input, concatenate
-from tensorflow.keras import optimizers
+from keras import backend as K
+from keras.models import Model
+from keras.layers import Dense, Input, concatenate
+from keras import optimizers
 
 from sklearn.metrics import accuracy_score
 from collections import defaultdict
