@@ -40,13 +40,13 @@ y = y_train[att_ind]
 
 #---------------------Set GAN parameters--------------------#
 rand_dim = 32
-base_n_count = 50
-combined_ep = 100
-batch_size = 128 if len(x) > 128 else len(x)
-ep_d = 1
-ep_g = 1
-learning_rate = 0.001 #5e-5
-Optimizer = 'sgd'
+base_n_count = 27
+n_layers = 4
+combined_ep = 200
+batch_size = 64 if len(x) > 128 else len(x)
+ep_d , ep_g = 1, 1
+learning_rate = 0.1 #5e-5
+Optimizer = 'Adagrad'
 activation = 'tanh'
 
 #--------------------Define & Train GANS-----------------------#
@@ -80,12 +80,19 @@ activation = 'tanh'
 # vanilla_gan.save_model_componets()
 
 #------- Conditional GAN ------#
-args = [rand_dim, combined_ep, batch_size, ep_d,ep_g, activation, Optimizer, learning_rate, base_n_count]
+# args = [rand_dim,n_layers, combined_ep, batch_size, ep_d,ep_g, activation, Optimizer, learning_rate, base_n_count]
+#
+# cgan = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
+# cgan.train()
+# cgan.dump_to_file()
 
-cgan = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
-cgan.train()
-cgan.dump_to_file()
+for op in ["sgd", "adam", "Adagrad","Adadelta","Adamax","Nadam","RMSprop"]:
+    for lr in [0.1,0.01,0.001,0.0001]:
+        args = [rand_dim,n_layers, combined_ep, batch_size, ep_d,ep_g, activation, op, lr, base_n_count]
 
+        model = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
+        model.train()
+        model.dump_to_file()
 #-------- Wasserstein GAN -------#
 # ep_d = 5
 # learning_rate = 0.0001

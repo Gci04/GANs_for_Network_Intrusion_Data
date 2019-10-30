@@ -11,7 +11,7 @@ from collections import defaultdict
 class CGAN():
     """Conditinal Generative Adversarial Network class"""
     def __init__(self,arguments,X,y):
-        [self.rand_noise_dim, self.tot_epochs, self.batch_size,self.D_epochs,\
+        [self.rand_noise_dim, self.n_layers, self.tot_epochs, self.batch_size,self.D_epochs,\
          self.G_epochs, self.activation_f, self.optimizer, self.learning_rate, self.min_num_neurones] = arguments
 
         self.X_train = X
@@ -40,9 +40,9 @@ class CGAN():
 
     def build_discriminator(self,x):
         """Create the discrimnator model D(G(z,l)) : z -> random noise , l -> label (condition)"""
-        x = Dense(self.min_num_neurones*4, activation=self.activation_f)(x)
-        x = Dense(self.min_num_neurones*2, activation=self.activation_f)(x)
-        x = Dense(self.min_num_neurones, activation=self.activation_f)(x)
+        for n in reversed(range(1,self.n_layers+1)):
+            x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
+
         x = Dense(1, activation='sigmoid')(x)
 
         return x
@@ -124,7 +124,7 @@ class CGAN():
             self.disc_loss_real.append(d_loss_real[0])
             self.disc_loss_generated.append(d_loss_fake[0])
             self.d_losses.append(d_loss[0])
-            self.acc_history.append(100*d_loss[1])
+            self.acc_history.append([d_loss_fake[1],d_loss_real[1]])
 
             #Train Generator (generator in combined model is trainable while discrimnator is frozen)
             for j in range(self.G_epochs):
