@@ -3,18 +3,19 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 import preprocessing
-import utils
+import utils, gc, itertools
 import classifiers as clf
 import cgan, VannilaGan, wgan
 from tensorflow.keras.utils import to_categorical
 
 import matplotlib.pyplot as plt
 
+gc.disable()
 #-------------------- Load Data ----------------------------#
 train,test, label_mapping = preprocessing.get_data(encoding="Label")
 data_cols = list(train.columns[ train.columns != 'label' ])
 x_train , x_test = preprocessing.preprocess(train,test,data_cols,"Robust",False)
-
+train, test = None, None
 y_train = x_train.label.values
 y_test = x_test.label.values
 
@@ -30,7 +31,6 @@ x_test = x_test[data_cols]
 
 data_cols = list(x_train.columns[ x_train.columns != 'label' ])
 
-print(x_train.head())
 #---------------------classification ------------------------#
 # randf = clf.random_forest(x_train, y_train, x_test, y_test)
 # nn = clf.neural_network(x_train[data_cols], y_train, x_test[data_cols], y_test,True)
@@ -42,7 +42,7 @@ print(x_train.head())
 att_ind = np.where(x_train.label != label_mapping["normal"])[0]
 x = x_train[data_cols].values[att_ind]
 y = y_train[att_ind]
-
+# x_train, y_train = None, None
 #---------------------Set GAN parameters--------------------#
 rand_dim = 32
 base_n_count = 27
@@ -85,19 +85,24 @@ activation = 'tanh'
 # vanilla_gan.save_model_componets()
 
 #------- Conditional GAN ------#
-args = [rand_dim,n_layers, combined_ep, batch_size, ep_d,ep_g, activation, Optimizer, learning_rate, base_n_count]
-
-cgan = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
-cgan.train()
-cgan.dump_to_file()
-
-# for op in ["sgd", "adam", "Adagrad","Adadelta","Adamax","Nadam","RMSprop"]:
-#     for lr in [0.1,0.01,0.001,0.0001]:
-#         args = [rand_dim,n_layers, combined_ep, batch_size, ep_d,ep_g, activation, op, lr, base_n_count]
+# args = [rand_dim,n_layers, combined_ep, batch_size, ep_d,ep_g, activation, Optimizer, learning_rate, base_n_count]
 #
-#         model = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
-#         model.train()
-#         model.dump_to_file()
+# cgan = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
+# cgan.train()
+# cgan.dump_to_file()
+
+op =  ["sgd", "adam", "Adagrad","Adadelta","Adamax","Nadam","RMSprop"]
+lr = [0.1,0.01,0.001,0.0001]
+params = list(itertools.product([rand_dim],[n_layers], [100,200,500,1000], [batch_size], [1],[1], ['relu','tanh'], op, lr, [base_n_count]))
+print('Total parameters sets : {}'.format(len(params)))
+gc.collect()
+gc.enable()
+for arg in params:
+    args = list(arg)
+    model = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
+    model.train()
+    model.dump_to_file()
+
 #-------- Wasserstein GAN -------#
 # ep_d = 5
 # learning_rate = 0.0001
