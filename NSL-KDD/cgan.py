@@ -149,7 +149,7 @@ class CGAN():
         H["discriminator_loss"] = self.d_losses
         H["rand_noise_dim"] , H["total_epochs"] = self.rand_noise_dim, self.tot_epochs
         H["batch_size"] , H["learning_rate"]  = self.batch_size, self.learning_rate
-        H["n_layers"] , H["activation"]  = 4 , self.activation_f
+        H["n_layers"] , H["activation"]  = self.n_layers , self.activation_f
         H["optimizer"] , H["min_num_neurones"] = self.optimizer, self.min_num_neurones
 
         if not os.path.exists(save_dir):
