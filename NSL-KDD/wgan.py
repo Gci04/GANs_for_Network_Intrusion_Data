@@ -28,11 +28,12 @@ class WGAN(object):
         self.critic_losses, self.critic_loss_real, self.critic_loss_generated = [], [], []
         self.accuracy_real, self.accuracy_gen = [], []
 
-        self.__define_models()
         self.gan_name = '_'.join(str(e) for e in args).replace('.','')
 
         self.clip_value = 0.08
         self.n_layers = 4
+        self.trained = False
+        self.__define_models()
 
     def wasserstein_loss(self,y_true, y_pred):
         """define earth mover distance (wasserstein loss)"""
@@ -89,6 +90,8 @@ class WGAN(object):
         return batch_ix
 
     def train(self):
+        """Trains the Wasserstein Conditional GAN model"""
+        print("Wasserstein Conditional GAN Training : Started!")
         # Adversarial ground truths
         real_labels = -np.ones((self.batch_size, 1))
         fake_labels = np.ones((self.batch_size, 1))
@@ -146,6 +149,15 @@ class WGAN(object):
                 self.accuracy_gen.append(fake_acc)
 
                 print ("Epoch : {:d} [critic loss: {:.4f}, acc(real) : {:.4f}, acc(fake) : {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss, real_acc, fake_acc, g_loss))
+        self.trained = True
+        print("Wasserstein Conditional GAN Train : Finished!")
+
+    def generate_data(self,labels):
+        n = len(labels)
+        assert(self.trained == True), "Model not trained!!"
+        assert(n != 0 ), "Labels Empty!!"
+        noise = np.random.normal(0, 1, (n, self.rand_noise_dim))
+        return self.generator.predict([noise, labels])[:,:-1]
 
     def save_model_config(self,save_dir="./wcgan_logs"):
         H = defaultdict(dict)
