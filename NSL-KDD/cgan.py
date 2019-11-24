@@ -26,6 +26,7 @@ class CGAN():
         self.gan_name = '_'.join(str(e) for e in arguments).replace(".","")
 
         self.__define_models()
+        self.trained = False
 
     def build_generator(self,x,labels):
         """Create the generator model G(z,l) : z -> random noise , l -> label (condition)"""
@@ -95,7 +96,7 @@ class CGAN():
 
     def train(self):
         """Trains the CGAN model"""
-
+        print("Conditional GAN Training : Started!")
         # Adversarial ground truths
         real_labels = np.ones((self.batch_size, 1))
         fake_labels = np.zeros((self.batch_size, 1))
@@ -138,6 +139,15 @@ class CGAN():
 
             #Print metrices
             print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
+        self.trained = True
+        print("Conditional GAN Train : Finished!")
+
+    def generate_data(self,labels):
+        n = len(labels)
+        assert(self.trained == True), "Model not trained!!"
+        assert(n != 0 ), "Labels Empty!!"
+        noise = np.random.normal(0, 1, (n, self.rand_noise_dim))
+        return self.generator.predict([noise, labels])[:,:-1]
 
     def dump_to_file(self,save_dir = "./logs"):
         """Dumps the training history and GAN config to pickle file """
@@ -149,7 +159,7 @@ class CGAN():
         H["discriminator_loss"] = self.d_losses
         H["rand_noise_dim"] , H["total_epochs"] = self.rand_noise_dim, self.tot_epochs
         H["batch_size"] , H["learning_rate"]  = self.batch_size, self.learning_rate
-        H["n_layers"] , H["activation"]  = 4 , self.activation_f
+        H["n_layers"] , H["activation"]  = self.n_layers , self.activation_f
         H["optimizer"] , H["min_num_neurones"] = self.optimizer, self.min_num_neurones
 
         if not os.path.exists(save_dir):
@@ -157,3 +167,4 @@ class CGAN():
 
         with open(f"{save_dir}/CGAN_{self.gan_name}{'.pickle'}", "wb") as output_file:
             pickle.dump(H,output_file)
+        print("Save Model : DONE")
