@@ -15,7 +15,7 @@ def get_data(encoding = "Label"):
     train = pd.read_csv(data_folder+"/UNSW_NB15_testing-set.csv",usecols=range(1,45))
     test = pd.read_csv(data_folder+"/UNSW_NB15_training-set.csv",usecols=range(1,45))
 
-    categorical_features = ["proto", "service", "state"]
+    categorical_features = ["proto","state","service"]
 
     le = LabelEncoder()
     le.fit(train.attack_cat)
@@ -57,11 +57,12 @@ def preprocess(x_train, x_test, data_cols, preprocessor = "StandardScaler",rejec
     Scale and transform data with an option to remove highly correlated features
     """
     if reject_features :
-        profile = pandas_profiling.ProfileReport(x_train)
-        to_drop = profile.get_rejected_variables()
+        to_drop =['ct_srv_dst', 'ct_srv_src', 'dloss', 'dpkts', 'is_ftp_login', 'sloss', 'spkts', 'swin']
+        #profile = pandas_profiling.ProfileReport(x_train)
+        #to_drop = profile.get_rejected_variables(0.95)
         x_train.drop(to_drop,axis=1,inplace=True)
         x_test.drop(to_drop,axis=1,inplace=True)
-        data_cols = list(x_train.columns[ x_train.columns != 'label' ])
+        data_cols = list(x_train.columns)[:-2]
 
     if preprocessor == "MinMax":
         scaler = MinMaxScaler(feature_range=(-1, 1))

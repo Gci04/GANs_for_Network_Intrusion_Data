@@ -2,41 +2,59 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-import preprocessing
-from classifiers import *
-from utils import *
-from matplotlib import pyplot as plt
+import preprocessing, cgan, utils
+import classifiers as clf
 
 train,test, label_mapping = preprocessing.get_data()
+data_cols = list(train.drop(["label","attack_cat"],axis=1).columns)
+train , test = preprocessing.preprocess(train,test,data_cols,"Robust",True)
+
 x_train,y_train = train.drop(["label","attack_cat"],axis=1),train.attack_cat.values
 x_test , y_test =  test.drop(["label","attack_cat"],axis=1),test.attack_cat.values
-# randf = random_forest(x_train,y_train,x_test , y_test)
-# deci = decision_tree(x_train,y_train,x_test , y_test)
-# x_train.head()
-# #Gans
-# generate r2l attacks samples
-x = x_train.iloc[np.where(y_train == 9)[0]]
-data_cols = list(x.columns)
-label_cols = ['attack_cat']
+train,test = None, None
+
+data_cols = list(x_train.columns)
+
+# to_drop = preprocessing.get_contant_featues(x_train,data_cols,threshold=0.999)
+# x_train.drop(to_drop, axis=1,inplace=True)
+# x_test.drop(to_drop, axis=1,inplace=True)
+# data_cols = list(x_train.columns)
+
+clf.DISPLAY_PERFOMANCE = False
+
+#---------------------classification ------------------------#
+
+att_ind = np.where(y_train != label_mapping["Normal"])[0]
+for_test = np.where(y_test != label_mapping["Normal"])[0]
+
+del label_mapping["Normal"]
+x = x_train[data_cols].values[att_ind]
+y = y_train[att_ind]
+
+randf = clf.random_forest(x, y, x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+nn = clf.neural_network(x, y, x_test[data_cols].values[for_test], y_test[for_test],label_mapping,True)
+deci = clf.decision_tree(x, y, x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+catb = clf.catBoost(x, y, x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+nb = clf.naive_bayes(x, y, x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+
+#---------------------CGAN Parameters set ------------------------#
 
 rand_dim = 32
-base_n_count = 128
+base_n_count = 27
+n_layers = 4
+combined_ep = 500 #500
+batch_size = 64 if len(x) > 128 else len(x)
+ep_d , ep_g = 1, 1
+learning_rate = 0.001 #5e-5
+Optimizer = 'sgd'
+activation = 'tanh'
+args = [rand_dim,n_layers,combined_ep ,batch_size,ep_d,ep_g,activation,Optimizer,learning_rate,base_n_count]
 
-combined_ep = 700
-batch_size = 128
+#--------------------Define & Train GANS-----------------------#
 
-ep_d = 1
-ep_g = 2
-learning_rate = 5e-4
-
-x = StandardScaler().fit_transform(x)
-
-arguments = [rand_dim,combined_ep,batch_size,ep_d,ep_g,learning_rate,base_n_count]
-res = adversarial_training_GAN(arguments,x,data_cols,label_cols)
-
-print(res["combined_model"].predict(np.random.normal(size=(3,32))))
-plt.plot(np.arange(len(res["disc_loss_generated"])),res["disc_loss_generated"])
-plt.title("UNSW-NS15 Combined model Loss")
-plt.ylabel("Loss")
-plt.xlabel("Epoch")
-plt.show()
+model = cgan.CGAN(args,x,y.reshape(-1,1))
+model.train()
+model.dump_to_file()
+#
+m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"GaussianNB":nb}
+utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,folds=3)

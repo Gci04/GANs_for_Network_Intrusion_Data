@@ -25,21 +25,26 @@ y_test = x_test.label.values
 
 data_cols = list(x_train.columns[ x_train.columns != 'label' ])
 
-to_drop = preprocessing.get_contant_featues(x_train,data_cols)
+to_drop = preprocessing.get_contant_featues(x_train,data_cols,threshold=0.995)
 x_train.drop(to_drop, axis=1,inplace=True)
 x_test.drop(to_drop, axis=1,inplace=True)
 
 data_cols = list(x_train.columns[ x_train.columns != 'label' ])
-
+clf.DISPLAY_PERFOMANCE = False
 #---------------------classification ------------------------#
-# randf = clf.random_forest(x_train[data_cols], y_train, x_test[data_cols], y_test)
-# nn = clf.neural_network(x_train[data_cols], y_train, x_test[data_cols], y_test,True)
-# deci = clf.decision_tree(x_train[data_cols],y_train,x_test[data_cols] , y_test)
-# catb = clf.catBoost(x_train[data_cols],y_train,x_test[data_cols] , y_test)
-# nb = clf.naive_bayes(x_train,y_train,x_test , y_test)
+att_ind = np.where(x_train.label != label_mapping["normal"])[0]
+for_test = np.where(x_test.label != label_mapping["normal"])[0]
+
+del label_mapping["normal"]
+randf = clf.random_forest(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+nn = clf.neural_network(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,True)
+deci = clf.decision_tree(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+# catb = clf.catBoost(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+nb = clf.naive_bayes(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+print(label_mapping)
 
 #---------------Generative Adversarial Networks -------------#
-att_ind = np.where(x_train.label != label_mapping["normal"])[0]
+# att_ind = np.where(x_train.label != label_mapping["normal"])[0]
 x = x_train[data_cols].values[att_ind]
 y = y_train[att_ind]
 # x_train, y_train = None, None
@@ -47,7 +52,7 @@ y = y_train[att_ind]
 rand_dim = 32
 base_n_count = 27
 n_layers = 4
-combined_ep = 500
+combined_ep = 500 #500
 batch_size = 64 if len(x) > 128 else len(x)
 ep_d , ep_g = 1, 1
 learning_rate = 0.001 #5e-5
@@ -55,41 +60,21 @@ Optimizer = 'sgd'
 activation = 'tanh'
 args = [rand_dim,n_layers,combined_ep ,batch_size,ep_d,ep_g,activation,Optimizer,learning_rate,base_n_count]
 #--------------------Define & Train GANS-----------------------#
+
 model = cgan.CGAN(args,x,y.reshape(-1,1))
 model.train()
 model.dump_to_file()
 
-labels =np.random.choice([0,2,3,4],(1000,1),p=[0.1,0.2,0.3,0.4],replace=True)
-print(np.unique(labels,return_counts=True))
-generated_x = model.generate_data(labels)
-
-new_trainx = np.vstack([x_train[data_cols].values,generated_x])
-new_y = np.append(y_train,labels)
-#
-# randf = clf.random_forest(new_trainx, new_y, x_test[data_cols], y_test)
-# nn = clf.neural_network(new_trainx, new_y, x_test[data_cols], y_test,True)
-# deci = clf.decision_tree(new_trainx,new_y,x_test[data_cols] , y_test)
-# catb = clf.catBoost(new_trainx,new_y,x_test[data_cols] , y_test)
-
-# op =  ["sgd", "adam", "Adagrad","Adadelta","Adamax","Nadam","RMSprop"]
-# lr = [0.1,0.01,0.001,0.0001]
-# params = list(itertools.product([rand_dim],[n_layers], [100,200,500,1000], [batch_size], [1],[1], ['relu','tanh'], op, lr, [base_n_count]))
-# print('Total parameters sets : {}'.format(len(params)))
-# gc.collect()
-# gc.enable()
-# for arg in params:
-#     args = list(arg)
-#     model = cgan.CGAN(args,x_train.values,y_train.reshape(-1,1))
-#     model.train()
-#     model.dump_to_file()
+m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"GaussianNB":nb}
+clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,folds=2)
 
 #-------- Wasserstein GAN -------#
+
 # ep_d = 5
 # learning_rate = 0.0001
 # args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
-#
+# 
 # wcgan = wgan.WGAN(args,x,y.reshape(-1,1))
 # wcgan.train()
 # wcgan.save_model_config()
-# labels =np.random.choice([0,2,3,4],(1000,1),p=[0.1,0.2,0.3,0.4],replace=True)
-# wcgan.generate_data(labels)
+# clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], wcgan, label_mapping, m ,folds=2)

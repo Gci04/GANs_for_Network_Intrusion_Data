@@ -17,6 +17,8 @@ class CGAN():
         self.X_train = X
         self.y_train = y
 
+        self.to_generate = np.unique(y)
+        print(self.to_generate)
         self.label_dim = y.shape[1]
         self.x_data_dim = X.shape[1]
 
@@ -130,15 +132,14 @@ class CGAN():
             #Train Generator (generator in combined model is trainable while discrimnator is frozen)
             for j in range(self.G_epochs):
                 #Condition on labels
-                # sampled_labels = np.random.randint(1, 5, self.batch_size).reshape(-1, 1)
-                sampled_labels = np.random.choice([0,2,3,4],(self.batch_size,1), replace=True)
+                sampled_labels = np.random.choice(self.to_generate ,(self.batch_size,1), replace=True)
 
                 #Train the generator
                 g_loss = self.combined.train_on_batch([noise, sampled_labels], real_labels)
                 self.g_losses.append(g_loss[0])
 
             #Print metrices
-            print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
+            # print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
         self.trained = True
         print("Conditional GAN Train : Finished!")
 

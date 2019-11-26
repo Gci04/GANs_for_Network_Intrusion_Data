@@ -7,21 +7,13 @@ from category_encoders import *
 
 warnings.filterwarnings('ignore')
 
-data_folder = "../Data/NSL-KDD"
-
 def get_data(encoding = 'Label', data_folder = "../Data/NSL-KDD"):
-    features = None
-    with open('features.txt', 'r') as f:
-      features = f.read().split('\n')
+    """
+    Retrive Train and Test data
+    """
 
-    train_att = pd.read_csv('attacks_types.txt',sep=" ",header=None,index_col=0)
-    attack_map = train_att.to_dict('dict')[1]
-
-    train = pd.read_csv(data_folder+"/KDDTrain+.txt",usecols=range(42),names=features)
-    test = pd.read_csv(data_folder+"/KDDTest+.txt",usecols=range(42),names=features)
-
-    test["label"] = test["label"].apply(lambda x: attack_map.get(x,"Unknown"))
-    train["label"] = train["label"].apply(lambda x: attack_map.get(x,"Unknown"))
+    train = pd.read_csv(data_folder+"/KDDTrain.csv")
+    test = pd.read_csv(data_folder+"/KDDTest.csv")
 
     le = LabelEncoder()
     le.fit(train.label)
