@@ -5,12 +5,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.cluster import MiniBatchKMeans, KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, precision_recall_fscore_support
 from collections import defaultdict
 
 from tabulate import tabulate
+from imblearn.under_sampling import RandomUnderSampler
+from time import time
 
 DISPLAY_PERFOMANCE = False
 try:
@@ -80,14 +82,25 @@ def svm(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = False):
     svm = __train_and_test(svm, xtrain, ytrain, xtest, ytest,labels_mapping)
     return svm
 
-def kMeans(X_train, y_train, X_test, y_test, labels_mapping, scaled = False):
-    pass
+def kMeans(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = True):
+    if not scaled :
+        scaler = StandardScaler()
+        xtrain = scaler.fit_transform(xtrain)
+        xtest = scaler.transform(xtest)
+
+    kmeans = KMeans(n_clusters=len(labels_mapping.values()), random_state=0)
+    kmeans = __train_and_test(kmeans, xtrain, ytrain, xtest, ytest,labels_mapping)
+    return kmeans
 
 def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,folds=3):
 
     dd = defaultdict(defaultdict(dict).copy)
+    #do downsapling
+    rus = RandomUnderSampler(sampling_strategy = {label_mapping["dos"]:20000},random_state=42)
+    x_old , y_old = rus.fit_resample(x_old,y_old)
 
     for i in range(folds):
+        print(f"Fold number : {i+1}")
         labels =np.random.choice(list(label_mapping.values()),(26000,1),p=[0.0,0.115,0.5,0.385],replace=True)
         generated_x = gan_generator.generate_data(labels)
 
@@ -97,16 +110,18 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,f
         randf = random_forest(new_trainx, new_y, x_test, y_test,label_mapping)
         nn = neural_network(new_trainx, new_y, x_test, y_test,label_mapping,True)
         deci = decision_tree(new_trainx, new_y, x_test, y_test,label_mapping)
+        supvm = svm(new_trainx, new_y, x_test, y_test,label_mapping,True)
+        kms = kMeans(new_trainx, new_y, x_test, y_test,label_mapping,True)
         nb = naive_bayes(new_trainx, new_y, x_test, y_test,label_mapping)
 
-        for estimator in [randf,deci,nn,nb] :
+        for estimator in [randf,deci,nn,supvm,nb,kms] :
             name = estimator.__class__.__name__
             pred = estimator.predict(x_test)
             precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=[0,2,3,4])
             dd[name][i]["precision"] = precision.tolist()
             dd[name][i]["recall"] = recall.tolist()
             dd[name][i]["fscore"] = fscore.tolist()
-
+    t = int(time())
     for estimator in dd.keys():
         tempdf = pd.DataFrame.from_dict(dd[estimator][1])
 
@@ -118,6 +133,6 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,f
             tempdf += pd.DataFrame.from_dict(dd[estimator][i])
 
         tempdf = (tempdf/folds) - before_balance
-        with open('performance.txt', 'a') as outputfile:
+        with open(f'results/performance{t}_{folds}folds.txt', 'a') as outputfile:
             outputfile.write("\n"+estimator+"\n")
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)
