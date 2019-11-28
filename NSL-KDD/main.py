@@ -36,10 +36,11 @@ att_ind = np.where(x_train.label != label_mapping["normal"])[0]
 for_test = np.where(x_test.label != label_mapping["normal"])[0]
 
 del label_mapping["normal"]
+svm = clf.svm(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
 randf = clf.random_forest(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
-nn = clf.neural_network(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,True)
+nn = clf.neural_network(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
 deci = clf.decision_tree(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
-# catb = clf.catBoost(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+kmeans = clf.kMeans(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
 nb = clf.naive_bayes(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
 print(label_mapping)
 
@@ -65,15 +66,15 @@ model = cgan.CGAN(args,x,y.reshape(-1,1))
 model.train()
 model.dump_to_file()
 
-m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"GaussianNB":nb}
-clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,folds=2)
+m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svm,"GaussianNB":nb,"KMeans":kmeans}
+clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,folds=10)
 
 #-------- Wasserstein GAN -------#
 
 # ep_d = 5
 # learning_rate = 0.0001
 # args = [rand_dim, combined_ep, batch_size,ep_d,ep_g, learning_rate, base_n_count]
-# 
+#
 # wcgan = wgan.WGAN(args,x,y.reshape(-1,1))
 # wcgan.train()
 # wcgan.save_model_config()
