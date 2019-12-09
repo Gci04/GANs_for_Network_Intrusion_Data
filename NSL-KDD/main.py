@@ -25,7 +25,7 @@ y_test = x_test.label.values
 
 data_cols = list(x_train.columns[ x_train.columns != 'label' ])
 
-to_drop = preprocessing.get_contant_featues(x_train,data_cols,threshold=0.995)
+to_drop = preprocessing.get_contant_featues(x_train,data_cols,threshold=0.99)
 x_train.drop(to_drop, axis=1,inplace=True)
 x_test.drop(to_drop, axis=1,inplace=True)
 
@@ -67,7 +67,7 @@ model.train()
 model.dump_to_file()
 
 m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svm,"GaussianNB":nb,"KMeans":kmeans}
-clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,folds=10)
+clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,folds=5)
 
 #-------- Wasserstein GAN -------#
 

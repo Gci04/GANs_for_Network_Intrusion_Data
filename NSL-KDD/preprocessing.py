@@ -54,8 +54,10 @@ def preprocess(x_train, x_test, data_cols, preprocessor = "StandardScaler",rejec
     Scale and transform data with an option to remove highly correlated features
     """
     if reject_features :
-        profile = pandas_profiling.ProfileReport(x_train)
-        to_drop = profile.get_rejected_variables()
+        # profile = pandas_profiling.ProfileReport(x_train)
+        to_drop = ['dst_host_srv_serror_rate','num_root','rerror_rate',
+                    'serror_rate','srv_rerror_rate','srv_serror_rate']
+        # to_drop = profile.get_rejected_variables()
         x_train.drop(to_drop,axis=1,inplace=True)
         x_test.drop(to_drop,axis=1,inplace=True)
         data_cols = list(x_train.columns[ x_train.columns != 'label' ])
