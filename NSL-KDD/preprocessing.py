@@ -7,6 +7,8 @@ from category_encoders import *
 
 warnings.filterwarnings('ignore')
 
+data_folder = "../Data/NSL-KDD"
+
 def get_data(encoding = 'Label', data_folder = "../Data/NSL-KDD"):
     """
     Retrive Train and Test data
@@ -55,9 +57,9 @@ def preprocess(x_train, x_test, data_cols, preprocessor = "StandardScaler",rejec
     """
     if reject_features :
         # profile = pandas_profiling.ProfileReport(x_train)
+        # to_drop = profile.get_rejected_variables()
         to_drop = ['dst_host_srv_serror_rate','num_root','rerror_rate',
                     'serror_rate','srv_rerror_rate','srv_serror_rate']
-        # to_drop = profile.get_rejected_variables()
         x_train.drop(to_drop,axis=1,inplace=True)
         x_test.drop(to_drop,axis=1,inplace=True)
         data_cols = list(x_train.columns[ x_train.columns != 'label' ])
@@ -112,3 +114,12 @@ def get_contant_featues(X,data_cols,threshold=0.995):
         result.append(col)
 
     return result
+
+def remove_outliers(X):
+    Q1 = X.drop('label',axis=1).quantile(0.1)
+    Q3 = X.drop('label',axis=1).quantile(0.99)
+    IQR = Q3 - Q1
+
+    mask = ~((X < (Q1 - 1.5 * IQR)) | (X > (Q3 + 1.5 * IQR))).any(axis=1)
+
+    return X[mask]

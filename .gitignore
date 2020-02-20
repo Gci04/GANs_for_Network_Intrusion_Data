@@ -106,5 +106,7 @@ venv.bak/
 .DS_Store
 logs/
 imgs/
-*.ipynb
-*.html
+results/
+imgs_wcgan/
+wcgan_logs/
+results_cgan/
