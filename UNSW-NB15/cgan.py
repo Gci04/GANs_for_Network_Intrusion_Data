@@ -1,5 +1,6 @@
 import numpy as np
 import os, pickle
+from scipy.stats import norm
 
 import tensorflow as tf
 from keras import backend as K
@@ -24,6 +25,7 @@ class CGAN():
         self.g_losses = []
         self.d_losses, self.disc_loss_real, self.disc_loss_generated = [], [], []
         self.acc_history = []
+        self.kl_history = []
         self.gan_name = '_'.join(str(e) for e in arguments).replace(".","")
 
         self.__define_models()
@@ -97,13 +99,16 @@ class CGAN():
 
     def train(self):
         """Trains the CGAN model"""
-        print("Conditional GAN Training : Started!")
+        print("Conditional GAN Training : [Started]")
         # Adversarial ground truths
         real_labels = np.ones((self.batch_size, 1))
         fake_labels = np.zeros((self.batch_size, 1))
         # Adversarial ground truths with noise
         #real_labels = np.random.uniform(low=0.999, high=1.0, size=(self.batch_size,1))
         #fake_labes = np.random.uniform(low=0, high=0.00001, size=(self.batch_size,1))
+
+        p = norm.pdf(self.X_train.T)
+        self.norm_p = p/p.sum(axis=1,keepdims=1)
 
         for epoch in range(self.tot_epochs):
             #Train Discriminator
@@ -137,10 +142,33 @@ class CGAN():
                 g_loss = self.combined.train_on_batch([noise, sampled_labels], real_labels)
                 self.g_losses.append(g_loss[0])
 
+            if epoch % 10 == 0:
+                self.calculate_kl_div()
+
             #Print metrices
             # print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
         self.trained = True
-        print("Conditional GAN Train : Finished!")
+        print("Conditional GAN Train : [Finished]")
+
+    def calculate_kl_div(self):
+        """
+        calculate Kullback–Leibler divergence between the generated dataset and original dataset.
+        Source : https://en.wikipedia.org/wiki/Kullback–Leibler_divergence
+        """
+        # K.set_learning_phase(0)
+        self.generator.trainable = False
+        noise = np.random.normal(0, 1, (len(self.X_train), self.rand_noise_dim))
+        g_z = self.generator.predict([noise, self.y_train])[:,:-1]
+        self.generator.trainable = True
+
+        q = norm.pdf(g_z.T)
+        norm_q = q/q.sum(axis=1,keepdims=1)
+
+        kl = np.sum(np.where(self.norm_p != 0, self.norm_p * np.log(self.norm_p/norm_q),0))
+        # print(" KL : {}".format(kl))
+        # K.set_learning_phase(1)
+
+        self.kl_history.append(kl)
 
     def generate_data(self,labels):
         n = len(labels)
@@ -157,6 +185,7 @@ class CGAN():
         H["disc_loss_real"] = self.disc_loss_real
         H["disc_loss_gen"] = self.disc_loss_generated
         H["discriminator_loss"] = self.d_losses
+        H["kl_divergence"] = self.kl_history
         H["rand_noise_dim"] , H["total_epochs"] = self.rand_noise_dim, self.tot_epochs
         H["batch_size"] , H["learning_rate"]  = self.batch_size, self.learning_rate
         H["n_layers"] , H["activation"]  = self.n_layers , self.activation_f
@@ -167,4 +196,4 @@ class CGAN():
 
         with open(f"{save_dir}/CGAN_{self.gan_name}{'.pickle'}", "wb") as output_file:
             pickle.dump(H,output_file)
-        print("Save Model : DONE")
+        print("Save Model : [DONE]")

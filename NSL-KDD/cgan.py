@@ -1,10 +1,11 @@
 import numpy as np
 import os, pickle
+from scipy.stats import norm
 
 import tensorflow as tf
 from keras import backend as K
 from keras.models import Model
-from keras.layers import Dense, Input, concatenate
+from keras.layers import Dense, Input, concatenate, Dropout
 from keras import optimizers
 from collections import defaultdict
 
@@ -17,25 +18,37 @@ class CGAN():
         self.X_train = X
         self.y_train = y
 
-        self.to_generate = np.unique(y)
-        print(self.to_generate)
         self.label_dim = y.shape[1]
         self.x_data_dim = X.shape[1]
 
         self.g_losses = []
         self.d_losses, self.disc_loss_real, self.disc_loss_generated = [], [], []
         self.acc_history = []
+        self.kl_history = []
         self.gan_name = '_'.join(str(e) for e in arguments).replace(".","")
 
+        d = {}
+
+        print(np.unique(self.y_train.ravel(),return_counts=True))
+        val, count = np.unique(self.y_train.ravel(),return_counts=True)
+        for v,c in zip(val,count):
+            d[v] = 0.5/c
+
+        self.sample_prob = np.array(list(map(lambda x : d.get(x),self.y_train.ravel())))
+        self.sample_prob /= self.sample_prob.sum()
+
+        K.clear_session()
         self.__define_models()
         self.trained = False
 
     def build_generator(self,x,labels):
         """Create the generator model G(z,l) : z -> random noise , l -> label (condition)"""
         x = concatenate([x,labels])
-        x = Dense(self.min_num_neurones*1, activation=self.activation_f)(x)
-        x = Dense(self.min_num_neurones*2, activation=self.activation_f)(x)
-        x = Dense(self.min_num_neurones*4, activation=self.activation_f)(x)
+        for n in range(1,self.n_layers):
+            if n == 2: x = Dropout(0.2)(x)
+            else:
+                x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
+
         x = Dense(self.x_data_dim)(x)
         x = concatenate([x,labels])
 
@@ -92,19 +105,23 @@ class CGAN():
 
     def __get_batch_idx(self):
         """random selects batch_size samples indeces from training data"""
-        batch_ix = np.random.choice(len(self.X_train), size=self.batch_size, replace=False)
+        # batch_ix = np.random.choice(len(self.X_train), size=self.batch_size, replace=False)
+        batch_ix = np.random.choice(len(self.X_train), size=self.batch_size, replace=True,p = self.sample_prob)
 
         return batch_ix
 
     def train(self):
         """Trains the CGAN model"""
-        print("Conditional GAN Training : Started!")
+        print("Conditional GAN Training : [STARTED]")
         # Adversarial ground truths
         real_labels = np.ones((self.batch_size, 1))
         fake_labels = np.zeros((self.batch_size, 1))
         # Adversarial ground truths with noise
         #real_labels = np.random.uniform(low=0.999, high=1.0, size=(self.batch_size,1))
         #fake_labes = np.random.uniform(low=0, high=0.00001, size=(self.batch_size,1))
+
+        p = norm.pdf(self.X_train.T)
+        self.norm_p = p/p.sum(axis=1,keepdims=1)
 
         for epoch in range(self.tot_epochs):
             #Train Discriminator
@@ -132,16 +149,19 @@ class CGAN():
             #Train Generator (generator in combined model is trainable while discrimnator is frozen)
             for j in range(self.G_epochs):
                 #Condition on labels
-                sampled_labels = np.random.choice(self.to_generate ,(self.batch_size,1), replace=True)
+                sampled_labels = np.random.choice(np.unique(self.y_train),(self.batch_size,1), replace=True)
 
                 #Train the generator
                 g_loss = self.combined.train_on_batch([noise, sampled_labels], real_labels)
                 self.g_losses.append(g_loss[0])
 
+            if epoch % 10 == 0:
+                self.calculate_kl_div()
+
             #Print metrices
-            # print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
+            #print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
         self.trained = True
-        print("Conditional GAN Train : Finished!")
+        print("Conditional GAN Training : [DONE]")
 
     def generate_data(self,labels):
         n = len(labels)
@@ -158,6 +178,7 @@ class CGAN():
         H["disc_loss_real"] = self.disc_loss_real
         H["disc_loss_gen"] = self.disc_loss_generated
         H["discriminator_loss"] = self.d_losses
+        H["kl_divergence"] = self.kl_history
         H["rand_noise_dim"] , H["total_epochs"] = self.rand_noise_dim, self.tot_epochs
         H["batch_size"] , H["learning_rate"]  = self.batch_size, self.learning_rate
         H["n_layers"] , H["activation"]  = self.n_layers , self.activation_f
@@ -168,4 +189,25 @@ class CGAN():
 
         with open(f"{save_dir}/CGAN_{self.gan_name}{'.pickle'}", "wb") as output_file:
             pickle.dump(H,output_file)
+        self.generator.save("gen.h5")
         print("Save Model : DONE")
+
+    def calculate_kl_div(self):
+        """
+        calculate Kullback–Leibler divergence between the generated dataset and original dataset.
+        Source : https://en.wikipedia.org/wiki/Kullback–Leibler_divergence
+        """
+        # K.set_learning_phase(0)
+        self.generator.trainable = False
+        noise = np.random.normal(0, 1, (len(self.X_train), self.rand_noise_dim))
+        g_z = self.generator.predict([noise, self.y_train])[:,:-1]
+        self.generator.trainable = True
+
+        q = norm.pdf(g_z.T)
+        norm_q = q/q.sum(axis=1,keepdims=1)
+
+        kl = np.sum(np.where(self.norm_p != 0, self.norm_p * np.log(self.norm_p/norm_q),0))
+        # print(" KL : {}".format(kl))
+        # K.set_learning_phase(1)
+
+        self.kl_history.append(kl)

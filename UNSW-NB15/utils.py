@@ -3,18 +3,29 @@ import pandas as pd
 from sklearn.metrics import classification_report, precision_recall_fscore_support
 from collections import defaultdict
 from classifiers import *
+from time import time
+import pickle, os
 
+from imblearn.under_sampling import RandomUnderSampler
 from tabulate import tabulate
 
-def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,folds=3):
+def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,cv=3):
     """Compares the perfomace of models using recall, precision & fscore. Dumps the results in .txt file"""
 
     perfomace_results = defaultdict(defaultdict(dict).copy)
 
-    for i in range(folds):
-        print(f"Fold number : {i+1}")
-        a = [0,1,2,7,8,9]
-        labels = np.random.choice(a,(26000,1),p=[0.15,0.05,0.1,0.1,0.3,0.3],replace=True)
+    #do downsapling
+    rus = RandomUnderSampler(sampling_strategy = {label_mapping["Generic"]:20000,label_mapping["Exploits"]:20000},random_state=42)
+    x_old , y_old = rus.fit_resample(x_old,y_old)
+
+    a = {'Analysis':6000, 'Backdoor':6000, 'DoS':3000, 'Exploits':0,'Fuzzers':2000,\
+    'Generic':0, 'Reconnaissance':5000, 'Shellcode':2000, 'Worms':300}
+    temp = np.array(list(a.values()))
+    p = temp/temp.sum()
+
+    for i in range(cv):
+        print(f"Cross validation number : {i+1}")
+        labels = np.random.choice(list(label_mapping.values()),(temp.sum(),1),p=p,replace=True)
         generated_x = gan_generator.generate_data(labels)
 
         new_trainx = np.vstack([x_old,generated_x])
@@ -23,9 +34,10 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
         randf = random_forest(new_trainx, new_y, x_test, y_test,label_mapping)
         nn = neural_network(new_trainx, new_y, x_test, y_test,label_mapping,True)
         deci = decision_tree(new_trainx, new_y, x_test, y_test,label_mapping)
-        nb = naive_bayes(new_trainx, new_y, x_test, y_test,label_mapping)
+        # nb = naive_bayes(new_trainx, new_y, x_test, y_test,label_mapping)
+        sVmclf = svm(new_trainx, new_y, x_test, y_test,label_mapping,True)
 
-        for estimator in [randf,deci,nn,nb] :
+        for estimator in [randf,deci,nn,sVmclf] :
             name = estimator.__class__.__name__
             pred = estimator.predict(x_test)
             precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=list(label_mapping.values()))
@@ -33,17 +45,46 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
             perfomace_results[name][i]["recall"] = recall.tolist()
             perfomace_results[name][i]["fscore"] = fscore.tolist()
 
+    t = int(time())
     for estimator in perfomace_results.keys():
-        tempdf = pd.DataFrame.from_dict(perfomace_results[estimator][1])
+        tempdf = pd.DataFrame.from_dict(perfomace_results[estimator][0])
 
         pred = models[estimator].predict(x_test)
         precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=list(label_mapping.values()))
-        before_balance = pd.DataFrame(data=np.stack([precision,recall,fscore]).T,columns=list(tempdf.columns))
+        before_balance = pd.DataFrame(data=np.vstack([precision,recall,fscore]).T,columns=list(tempdf.columns))
 
-        for i in range(1,folds):
+        for i in range(1,cv):
             tempdf += pd.DataFrame.from_dict(perfomace_results[estimator][i])
 
-        tempdf = (tempdf/folds) - before_balance
-        with open('UNSWperformance.txt', 'a') as outputfile:
+        tempdf = (tempdf/cv) - before_balance
+        with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
             outputfile.write("\n"+estimator+"\n")
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)
+
+    with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
+        outputfile.write(gan_generator.gan_name)
+
+def save_classifiers(clfs, dir = "./trained_classifiers"):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    for classifier in clfs:
+        with open(dir + f"/{classifier.__class__.__name__}.pickle", "wb") as f:
+            pickle.dump(classifier,f)
+    print("classifiers Save : [DONE]")
+
+
+def load_pretrained_classifiers(dir = "./trained_classifiers"):
+    if not os.path.exists(dir):
+        print(dir + " : [does not exists]")
+        exit(1)
+    else:
+        res = {}
+        for file in os.listdir(dir):
+            file_full_path = os.path.join(dir, file)
+            if os.path.isfile(file_full_path) and file_full_path[-7:] == ".pickle":
+                with open(file_full_path,"rb") as f:
+                    clf = pickle.load(f)
+                    res[clf.__class__.__name__] = clf
+
+        if len(res) > 0: print("pretrained classifiers load : [DONE]")
+    return res

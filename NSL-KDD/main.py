@@ -1,12 +1,10 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 import preprocessing
-import utils, gc, itertools
+import utils
 import classifiers as clf
 import cgan, VannilaGan, wgan
-from tensorflow.keras.utils import to_categorical
 
 import matplotlib.pyplot as plt
 
@@ -14,8 +12,10 @@ def main(arguments):
     #-------------------- Load Data ----------------------------#
     train,test, label_mapping = preprocessing.get_data(encoding="Label")
     data_cols = list(train.columns[ train.columns != 'label' ])
+    train = preprocessing.normalize_data(train,data_cols)
+    test = preprocessing.normalize_data(test,data_cols)
     x_train , x_test = preprocessing.preprocess(train,test,data_cols,"Robust",True)
-    x_train = preprocessing.remove_outliers(train)
+
     train, test = None, None
     y_train = x_train.label.values
     y_test = x_test.label.values
@@ -23,6 +23,7 @@ def main(arguments):
     data_cols = list(x_train.columns[ x_train.columns != 'label' ])
 
     to_drop = preprocessing.get_contant_featues(x_train,data_cols,threshold=0.995)
+    print(f"Constant Features : {to_drop}")
     x_train.drop(to_drop, axis=1,inplace=True)
     x_test.drop(to_drop, axis=1,inplace=True)
 
@@ -36,6 +37,7 @@ def main(arguments):
     # print(label_mapping)
 
     del label_mapping["normal"]
+    print(label_mapping)
     svm = clf.svm(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
     randf = clf.random_forest(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
     nn = clf.neural_network(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
@@ -66,24 +68,11 @@ def main(arguments):
     model.train()
     model.dump_to_file()
     m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svm}
-    clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=3)
+    clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=5)
 
 
     # #--------------------For WCGAN-----------------------#
-    # op =  ["sgd","adam","RMSprop"]
-    # lr = [0.01,0.001]
-    # params = list(itertools.product([32],[4], [500,1000], [64,128], [1,3,5],[1], ['relu','tanh'], op, lr, [27]))
-    # print('Total parameters sets : {}'.format(len(params)))
-    # np.random.shuffle(params)
-    # for arg in params[:50]:
-    #     args = list(arg)
-    #
-    #     print(args)
-    #     model = wgan.WGAN(args,x,y.reshape(-1,1))
-    #     model.train()
-    #     model.save_model_config()
-    #     m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svm}
-    #     clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=5)
+
 
 if __name__ == "__main__":
     # df = pd.read_csv("best_cgans.csv")
@@ -92,5 +81,5 @@ if __name__ == "__main__":
     #     main(p.tolist())
 
     # a = [32, 500, 128, 1, 1, 'tanh', 'sgd', 0.0005, 27] #for vannilaGan
-    a = [32, 3, 100, 128, 1, 1, 'tanh', 'sgd', 0.0005, 27] #for cGan
+    a = [32, 4, 2000, 128, 1, 1, 'relu', 'sgd', 0.0005, 27] #for cGan
     main(a)

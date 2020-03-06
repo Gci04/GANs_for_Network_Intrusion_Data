@@ -79,5 +79,13 @@ def svm(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = False):
     svm = __train_and_test(svm, xtrain, ytrain, xtest, ytest,labels_mapping)
     return svm
 
-def kMeans(X_train, y_train, X_test, y_test, labels_mapping, scaled = False):
-    pass
+def kMeans(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = True):
+    """MiniBatchKMeans"""
+    if not scaled :
+        scaler = StandardScaler()
+        xtrain = scaler.fit_transform(xtrain)
+        xtest = scaler.transform(xtest)
+
+    kmeans = MiniBatchKMeans(n_clusters=len(labels_mapping.values()), random_state=0)
+    kmeans = __train_and_test(kmeans, xtrain, ytrain, xtest, ytest,labels_mapping)
+    return kmeans

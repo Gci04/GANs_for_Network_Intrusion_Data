@@ -1,0 +1,10 @@
+numpy
+pandas
+matplotlib
+keras==2.2.4
+tensorflow==1.15.0
+pandas-profiling
+plotly==4.4.1
+tabulate
+imbalanced-learn
+category_encoders

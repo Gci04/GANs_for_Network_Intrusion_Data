@@ -16,17 +16,12 @@ This repository provides a Keras-Tensorflow implementation of an approach of gen
 
 All the libraries can be pip installed
 
-<!-- ## Dependencies and necessary libraries
-The list of required libraries to compile and run the repository code are as follows :
+## Getting Started
 
-```python
-1. sklearn
-2. Keras
-3. Tensorflow 1.x
-4. category_encoders
-5. Catboost
-```
-All the libraries can be pip installed -->
+1. Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
+1. Navigate to repository folder
+1. Install dependencies which are specified in requirements.txt. use `pip install -r requirements.txt` or `pip3 install -r requirements.txt`
+1. Raw Data is being kept [here](Data) within this repo.
 
 ## Repository directory layout
 

@@ -96,6 +96,9 @@ def kMeans(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = True):
 
 def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,cv=3):
 
+    if not os.path.exists("./results"):
+        os.makedirs("results")
+
     dd = defaultdict(defaultdict(dict).copy)
     #do downsapling
     rus = RandomUnderSampler(sampling_strategy = {label_mapping["dos"]:20000},random_state=42)
@@ -126,28 +129,23 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
     t = int(time())
     for estimator in dd.keys():
         tempdf = pd.DataFrame.from_dict(dd[estimator][0])
-        tempdf1 = pd.DataFrame.from_dict(dd[estimator][0])
 
         pred = models[estimator].predict(x_test)
         precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=[0,2,3,4])
         before_balance = pd.DataFrame(data=np.stack([precision,recall,fscore]).T,columns=list(tempdf.columns))
 
         for i in range(1,cv):
-            tempdf += pd.DataFrame.from_dict(dd[estimator][i])
-            tempdf1 = tempdf1.append(pd.DataFrame.from_dict(dd[estimator][i]) - before_balance)
+            tempdf = tempdf.append(pd.DataFrame.from_dict(dd[estimator][i]) - before_balance)
 
-        tempdf1["class"] = tempdf1.index
-        tempdf1 = tempdf1.groupby("class").agg({'recall': ['mean', 'std'],'precision': ['mean', 'std'],'fscore': ['mean', 'std']})
-        tempdf1.columns = [f"{i[0]}_{i[1]}" for i in tempdf1.columns]
-        tempdf1.to_csv(f'{estimator}.csv',index=False)
-        
-        tempdf = (tempdf/cv) - before_balance
+        tempdf["class"] = tempdf.index
+        tempdf = tempdf.groupby("class").agg({'recall': ['mean', 'std'],'precision': ['mean', 'std'],'fscore': ['mean', 'std']})
+        tempdf.columns = [f"{i[0]}_{i[1]}" for i in tempdf.columns]
+        # tempdf.to_csv(f'{estimator}.csv',index=False)
+
+        # tempdf = (tempdf/cv) - before_balance
         with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
             outputfile.write("\n"+estimator+"\n")
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)
-
-    if not os.path.exists("./results"):
-        os.makedirs("results")
 
     with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
         outputfile.write(gan_generator.gan_name)

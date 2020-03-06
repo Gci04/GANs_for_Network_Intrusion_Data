@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import sys, os , warnings , pandas_profiling
 from collections import defaultdict
-from sklearn.preprocessing import LabelEncoder, StandardScaler ,MinMaxScaler,RobustScaler, PowerTransformer
+from sklearn.preprocessing import LabelEncoder, StandardScaler ,MinMaxScaler,RobustScaler, PowerTransformer, normalize
 from category_encoders import *
 
 warnings.filterwarnings('ignore')
@@ -65,7 +65,7 @@ def preprocess(x_train, x_test, data_cols, preprocessor = "StandardScaler",rejec
         data_cols = list(x_train.columns)[:-2]
 
     if preprocessor == "MinMax":
-        scaler = MinMaxScaler(feature_range=(-1, 1))
+        scaler = MinMaxScaler(feature_range=(0, 1))
         x_train[data_cols] = scaler.fit_transform(x_train[data_cols])
         x_test[data_cols] = scaler.transform(x_test[data_cols])
         return x_train, x_test
@@ -110,7 +110,12 @@ def get_contant_featues(X,data_cols,threshold=0.995):
     for col in data_cols:
       val, counts = np.unique(X[col],return_counts=True)
       v = counts[0]/counts.sum()
-      if v < threshold:
+      if v > threshold:
         result.append(col)
 
     return result
+
+def normalize_data(X,data_cols):
+    """Scale input vectors individually to unit norm (vector length)"""
+    X[data_cols] = normalize(X[data_cols])
+    return X
