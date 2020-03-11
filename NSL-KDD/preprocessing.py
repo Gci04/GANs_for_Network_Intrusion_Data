@@ -126,5 +126,8 @@ def remove_outliers(X):
 
 def normalize_data(X,data_cols):
     """Scale input vectors individually to unit norm (vector length)"""
-    X[data_cols] = normalize(X[data_cols])
-    return X
+    if  data_cols is None:
+        return normalize(X)
+    else :
+        X[data_cols] = normalize(X[data_cols])
+        return X

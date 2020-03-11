@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import sys
 from sklearn.preprocessing import StandardScaler
 
 import preprocessing, cgan, utils
@@ -9,6 +8,8 @@ import classifiers as clfrs
 def main(arguments):
     train,test, label_mapping = preprocessing.get_data()
     data_cols = list(train.drop(["label","attack_cat"],axis=1).columns)
+    train = preprocessing.normalize_data(train,data_cols)
+    test = preprocessing.normalize_data(test,data_cols)
     train , test = preprocessing.preprocess(train,test,data_cols,"Robust",True)
     print(label_mapping)
     x_train,y_train = train.drop(["label","attack_cat"],axis=1),train.attack_cat.values
@@ -33,6 +34,7 @@ def main(arguments):
     del label_mapping["Normal"]
     x = x_train[data_cols].values[att_ind]
     y = y_train[att_ind]
+    print(x.shape)
 
     pretrained_classifiers = True
     if not pretrained_classifiers :
@@ -56,12 +58,19 @@ def main(arguments):
 
     #--------------------Define & Train GANS-----------------------#
 
+    print(args)
     model = cgan.CGAN(args,x,y.reshape(-1,1))
     model.train()
     model.dump_to_file()
 
-    utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=5)
+    # m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svmclf}
+    # utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=3)
 
 if __name__ == '__main__':
-    args = [32, 4, 2000, 128, 1, 1, 'relu', 'sgd', 0.0005, 27]
-    main(args)
+    # df = pd.read_csv("best_cgans.csv")
+    # df["combined_ep"] = df['combined_ep']*2
+    # for p in df.values:
+        # print(p)
+        # main(p.tolist())
+    a = [32, 4,6000, 128 , 1, 1, 'relu', 'sgd', 0.0005, 27]
+    main(a)

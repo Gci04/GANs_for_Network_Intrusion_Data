@@ -71,14 +71,10 @@ def main(arguments):
     clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=5)
 
 
-    # #--------------------For WCGAN-----------------------#
+    #--------------------For WCGAN-----------------------#
 
 
 if __name__ == "__main__":
-    # df = pd.read_csv("best_cgans.csv")
-    # df["combined_ep"] = df['combined_ep']*2
-    # for p in df.values:
-    #     main(p.tolist())
 
     # a = [32, 500, 128, 1, 1, 'tanh', 'sgd', 0.0005, 27] #for vannilaGan
     a = [32, 4, 2000, 128, 1, 1, 'relu', 'sgd', 0.0005, 27] #for cGan

@@ -7,13 +7,14 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.cluster import MiniBatchKMeans, KMeans
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report, precision_recall_fscore_support
+from sklearn.metrics import classification_report, precision_recall_fscore_support, f1_score
 from collections import defaultdict
 
 from tabulate import tabulate
 from imblearn.under_sampling import RandomUnderSampler
 from time import time
 import os
+from preprocessing import normalize_data
 
 DISPLAY_PERFOMANCE = False
 try:
@@ -107,7 +108,7 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
     for i in range(cv):
         print(f"Cross validation number  : {i+1}")
         labels =np.random.choice(list(label_mapping.values()),(26000,1),p=[0.0,0.115,0.5,0.385],replace=True)
-        generated_x = gan_generator.generate_data(labels)
+        generated_x = normalize_data(gan_generator.generate_data(labels),None)
 
         new_trainx = np.vstack([x_old,generated_x])
         new_y = np.append(y_old,labels)
@@ -126,23 +127,26 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
             dd[name][i]["precision"] = precision.tolist()
             dd[name][i]["recall"] = recall.tolist()
             dd[name][i]["fscore"] = fscore.tolist()
+            dd[name][i]["weighted_f1"] = [f1_score(y_test,pred,labels=[0,2,3,4],average='weighted')] * len(label_mapping)
+
     t = int(time())
     for estimator in dd.keys():
         tempdf = pd.DataFrame.from_dict(dd[estimator][0])
 
         pred = models[estimator].predict(x_test)
         precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=[0,2,3,4])
-        before_balance = pd.DataFrame(data=np.stack([precision,recall,fscore]).T,columns=list(tempdf.columns))
+        weighted_f1 = [f1_score(y_test,pred,labels=[0,2,3,4],average='weighted')] * len(label_mapping)
+        before_balance = pd.DataFrame(data=np.stack([precision,recall,fscore,weighted_f1]).T,columns=list(tempdf.columns))
+
+        tempdf = tempdf - before_balance
 
         for i in range(1,cv):
             tempdf = tempdf.append(pd.DataFrame.from_dict(dd[estimator][i]) - before_balance)
 
         tempdf["class"] = tempdf.index
-        tempdf = tempdf.groupby("class").agg({'recall': ['mean', 'std'],'precision': ['mean', 'std'],'fscore': ['mean', 'std']})
+        tempdf = tempdf.groupby("class").agg({'recall': ['mean', 'std'], 'precision': ['mean', 'std'], 'fscore': ['mean', 'std'], 'weighted_f1' : ['mean', 'std']})
         tempdf.columns = [f"{i[0]}_{i[1]}" for i in tempdf.columns]
-        # tempdf.to_csv(f'{estimator}.csv',index=False)
 
-        # tempdf = (tempdf/cv) - before_balance
         with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
             outputfile.write("\n"+estimator+"\n")
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)
