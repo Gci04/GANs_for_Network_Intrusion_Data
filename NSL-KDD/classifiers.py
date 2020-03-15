@@ -100,7 +100,7 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
     if not os.path.exists("./results"):
         os.makedirs("results")
 
-    dd = defaultdict(defaultdict(dict).copy)
+    perfomace_results = defaultdict(defaultdict(dict).copy)
     #do downsapling
     rus = RandomUnderSampler(sampling_strategy = {label_mapping["dos"]:20000},random_state=42)
     x_old , y_old = rus.fit_resample(x_old,y_old)
@@ -108,7 +108,7 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
     for i in range(cv):
         print(f"Cross validation number  : {i+1}")
         labels =np.random.choice(list(label_mapping.values()),(26000,1),p=[0.0,0.115,0.5,0.385],replace=True)
-        generated_x = normalize_data(gan_generator.generate_data(labels),None)
+        generated_x = gan_generator.generate_data(labels)
 
         new_trainx = np.vstack([x_old,generated_x])
         new_y = np.append(y_old,labels)
@@ -124,14 +124,14 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
             name = estimator.__class__.__name__
             pred = estimator.predict(x_test)
             precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=[0,2,3,4])
-            dd[name][i]["precision"] = precision.tolist()
-            dd[name][i]["recall"] = recall.tolist()
-            dd[name][i]["fscore"] = fscore.tolist()
-            dd[name][i]["weighted_f1"] = [f1_score(y_test,pred,labels=[0,2,3,4],average='weighted')] * len(label_mapping)
+            perfomace_results[name][i]["precision"] = precision.tolist()
+            perfomace_results[name][i]["recall"] = recall.tolist()
+            perfomace_results[name][i]["fscore"] = fscore.tolist()
+            perfomace_results[name][i]["weighted_f1"] = [f1_score(y_test,pred,labels=[0,2,3,4],average='weighted')] * len(label_mapping)
 
     t = int(time())
-    for estimator in dd.keys():
-        tempdf = pd.DataFrame.from_dict(dd[estimator][0])
+    for estimator in perfomace_results.keys():
+        tempdf = pd.DataFrame.from_dict(perfomace_results[estimator][0])
 
         pred = models[estimator].predict(x_test)
         precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=[0,2,3,4])
@@ -141,7 +141,7 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
         tempdf = tempdf - before_balance
 
         for i in range(1,cv):
-            tempdf = tempdf.append(pd.DataFrame.from_dict(dd[estimator][i]) - before_balance)
+            tempdf = tempdf.append(pd.DataFrame.from_dict(perfomace_results[estimator][i]) - before_balance)
 
         tempdf["class"] = tempdf.index
         tempdf = tempdf.groupby("class").agg({'recall': ['mean', 'std'], 'precision': ['mean', 'std'], 'fscore': ['mean', 'std'], 'weighted_f1' : ['mean', 'std']})

@@ -1,5 +1,5 @@
 import numpy as np
-import os, pickle
+import os, pickle, tqdm
 from scipy.stats import norm
 
 import tensorflow as tf
@@ -44,8 +44,9 @@ class CGAN():
     def build_generator(self,x,labels):
         """Create the generator model G(z,l) : z -> random noise , l -> label (condition)"""
         x = concatenate([x,labels])
-        for n in range(1,self.n_layers):
-            if n == 2: x = Dropout(0.2)(x)
+        for n in range(1,self.n_layers+1):
+            if n == 2:
+                x = Dropout(0.2)(x)
             else:
                 x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
 
@@ -123,7 +124,7 @@ class CGAN():
         p = norm.pdf(self.X_train.T)
         self.norm_p = p/p.sum(axis=1,keepdims=1)
 
-        for epoch in range(self.tot_epochs):
+        for epoch in tqdm.tqdm(range(self.tot_epochs),desc='GAN Train loop'):
             #Train Discriminator
             for i in range(self.D_epochs):
 
