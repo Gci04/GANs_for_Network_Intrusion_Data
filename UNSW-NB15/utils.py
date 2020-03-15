@@ -50,17 +50,20 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
     t = int(time())
     for estimator in perfomace_results.keys():
         tempdf = pd.DataFrame.from_dict(perfomace_results[estimator][0])
+        tempdf.index = list(label_mapping.values())
 
         pred = models[estimator].predict(x_test)
         precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=list(label_mapping.values()))
         weighted_f1 = [f1_score(y_test,pred,labels=list(label_mapping.values()),average='weighted')] * len(label_mapping)
-        before_balance = pd.DataFrame(data=np.stack([precision,recall,fscore,weighted_f1]).T,columns=list(tempdf.columns))
+        before_balance = pd.DataFrame(data=np.stack([precision,recall,fscore,weighted_f1]).T,columns=list(tempdf.columns),index=list(label_mapping.values()))
 
         tempdf = tempdf - before_balance
         for i in range(1,cv):
-            tempdf = tempdf.append(pd.DataFrame.from_dict(perfomace_results[estimator][i]) - before_balance)
+            to_append = pd.DataFrame.from_dict(perfomace_results[estimator][i])
+            to_append.index = list(label_mapping.values())
+            tempdf = tempdf.append(to_append - before_balance)
 
-        tempdf["class"] = tempdf.index
+        tempdf["class"] = tempdf.index.map({y:x for x,y in label_mapping.items()})
         tempdf = tempdf.groupby("class").agg({'recall': ['mean', 'std'], 'precision': ['mean', 'std'], 'fscore': ['mean', 'std'], 'weighted_f1' : ['mean', 'std']})
         tempdf.columns = [f"{i[0]}_{i[1]}" for i in tempdf.columns]
 

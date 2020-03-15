@@ -3,6 +3,12 @@ import os, pickle, tqdm
 from scipy.stats import norm
 
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+np.random.seed(12343)
+tf.set_random_seed(12343)
+# from tensorflow.python.util import deprecation
+# deprecation._PRINT_DEPRECATION_WARNINGS = False
 from keras import backend as K
 from keras.models import Model
 from keras.layers import Dense, Input, concatenate, Dropout
@@ -29,7 +35,7 @@ class CGAN():
 
         d = {}
 
-        print(np.unique(self.y_train.ravel(),return_counts=True))
+        # print(np.unique(self.y_train.ravel(),return_counts=True))
         val, count = np.unique(self.y_train.ravel(),return_counts=True)
         for v,c in zip(val,count):
             d[v] = 0.5/c

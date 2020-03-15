@@ -110,3 +110,4 @@ results/
 imgs_wcgan/
 wcgan_logs/
 results_cgan/
+*.h5

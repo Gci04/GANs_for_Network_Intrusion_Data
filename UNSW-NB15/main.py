@@ -31,7 +31,7 @@ def main(arguments):
     att_ind = np.where(y_train != label_mapping["Normal"])[0]
     for_test = np.where(y_test != label_mapping["Normal"])[0]
 
-    del label_mapping["Normal"]
+    del label_mapping["Normal"] #remove Normal netwok traffic from data 
     x = x_train[data_cols].values[att_ind]
     y = y_train[att_ind]
     print(x.shape)
@@ -44,15 +44,15 @@ def main(arguments):
         deci = clfrs.decision_tree(x, y, x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
         svmclf = clfrs.svm(x, y, x_test[data_cols].values[for_test], y_test[for_test],label_mapping,True)
 
-        m = {}
+        ml_classifiers = {}
         for clf in [randf,nn,deci,svmclf]:
-            m[clf.__class__.__name__] = clf
+            ml_classifiers[clf.__class__.__name__] = clf
 
         utils.save_classifiers([randf,nn,deci,svmclf])
     else:
-        m = utils.load_pretrained_classifiers()
+        ml_classifiers = utils.load_pretrained_classifiers()
 
-    #---------------------CGAN Parameters set ------------------------#
+    #--------------------- Get or set GAN parameters ------------------------#
 
     args = arguments
 
@@ -63,14 +63,9 @@ def main(arguments):
     model.train()
     model.dump_to_file()
 
-    # m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svmclf}
-    utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=5)
+    #Genetare new data samples, fit ML models compare perfomance with ML models before data balancing
+    utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5)
 
 if __name__ == '__main__':
-    # df = pd.read_csv("best_cgans.csv")
-    # df["combined_ep"] = df['combined_ep']*2
-    # for p in df.values:
-        # print(p)
-        # main(p.tolist())
-    a = [32, 4,6000, 128 , 1, 1, 'relu', 'sgd', 0.0005, 27]
-    main(a)
+    gan_params = [32, 4,6000, 128 , 1, 1, 'relu', 'sgd', 0.0005, 27]
+    main(gan_params)

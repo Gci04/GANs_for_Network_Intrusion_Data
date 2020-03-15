@@ -30,7 +30,7 @@ def plot_summary(d_l, g_l,acc_r,acc_g, kl, m =''):
     axs2.plot(n, acc_r,label='Accuracy on Real',linewidth=3)
     axs2.legend(loc=0,prop={'size': 13})
     axs2.set_ylabel('Accuracy',fontsize=15.0,fontweight="bold")
-    # axs2.set_xlabel('Ephoc',fontsize=15.0,fontweight="bold")
+    # axs2.set_xlabel('epoch',fontsize=15.0,fontweight="bold")
     axs2.tick_params(labelsize=10)
 
     axs3 = plt.subplot(212)
@@ -39,7 +39,7 @@ def plot_summary(d_l, g_l,acc_r,acc_g, kl, m =''):
     axs3.plot(n, kl,label='KL',linewidth=3)
     axs3.legend(loc=0,prop={'size': 13})
     axs3.set_ylabel('KL-Divergence',fontsize=15.0,fontweight="bold")
-    axs3.set_xlabel('Ephoc',fontsize=15.0,fontweight="bold")
+    axs3.set_xlabel('Epoch',fontsize=15.0,fontweight="bold")
     axs3.tick_params(labelsize=10)
 
     # plt.tight_layout()
@@ -64,18 +64,13 @@ if __name__ == '__main__':
         acc_gen = acc_history[:,0]
         kl = np.array(x["kl_divergence"]).ravel()
         plot_summary(d_l, g_l,acc_real,acc_gen,kl,name)
-        
+
     else:
-        df = pd.read_csv("best_cgans.csv")
-        # df["combined_ep"] = df['combined_ep']*2
-        for p in df.values:
-            # main(p.tolist())
-            name = "logs/CGAN_" + '_'.join(str(e) for e in p.tolist()).replace(".","") + ".pickle"
+        for name in os.listdir("logs"):
 
             print(name)
-            with open( name, 'rb') as f:
+            with open(f"logs/{name}", 'rb') as f:
                 x = pickle.load(f)
-            name = name.split("/")[-1]
 
             d_l = np.array(x['discriminator_loss']).ravel()
             g_l = np.array(x['Generator_loss']).ravel()
