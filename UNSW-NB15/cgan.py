@@ -1,11 +1,11 @@
 import numpy as np
-import os, pickle
+import os, pickle, tqdm
 from scipy.stats import norm
 
 import tensorflow as tf
 from keras import backend as K
 from keras.models import Model
-from keras.layers import Dense, Input, concatenate
+from keras.layers import Dense, Input, concatenate, Dropout
 from keras import optimizers
 from collections import defaultdict
 
@@ -28,15 +28,27 @@ class CGAN():
         self.kl_history = []
         self.gan_name = '_'.join(str(e) for e in arguments).replace(".","")
 
+        d = {}
+        print(np.unique(self.y_train.ravel(),return_counts=True))
+        val, count = np.unique(self.y_train.ravel(),return_counts=True)
+        for v,c in zip(val,count):
+            d[v] = 0.5/c
+
+        self.sample_prob = np.array(list(map(lambda x : d.get(x),self.y_train.ravel())))
+        self.sample_prob /= self.sample_prob.sum()
+
         self.__define_models()
         self.trained = False
 
     def build_generator(self,x,labels):
         """Create the generator model G(z,l) : z -> random noise , l -> label (condition)"""
         x = concatenate([x,labels])
-        x = Dense(self.min_num_neurones*1, activation=self.activation_f)(x)
-        x = Dense(self.min_num_neurones*2, activation=self.activation_f)(x)
-        x = Dense(self.min_num_neurones*4, activation=self.activation_f)(x)
+        for n in range(1,self.n_layers+1):
+            if n == 2 :
+                x = Dropout(0.2)(x)
+            else:
+                x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
+
         x = Dense(self.x_data_dim)(x)
         x = concatenate([x,labels])
 
@@ -93,9 +105,10 @@ class CGAN():
 
     def __get_batch_idx(self):
         """random selects batch_size samples indeces from training data"""
-        batch_ix = np.random.choice(len(self.X_train), size=self.batch_size, replace=False)
-
-        return batch_ix
+        if self.batch_size > 130:
+            return np.random.choice(len(self.X_train), size=self.batch_size, replace=True,p = self.sample_prob)
+        else:
+            return np.random.choice(len(self.X_train), size=self.batch_size, replace=False,p = self.sample_prob)
 
     def train(self):
         """Trains the CGAN model"""
@@ -110,7 +123,7 @@ class CGAN():
         p = norm.pdf(self.X_train.T)
         self.norm_p = p/p.sum(axis=1,keepdims=1)
 
-        for epoch in range(self.tot_epochs):
+        for epoch in tqdm.tqdm(range(self.tot_epochs),desc='cGAN training '):
             #Train Discriminator
             for i in range(self.D_epochs):
 

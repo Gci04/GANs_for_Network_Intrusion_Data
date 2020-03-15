@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import classification_report, precision_recall_fscore_support
+from sklearn.metrics import classification_report, precision_recall_fscore_support, f1_score
 from collections import defaultdict
 from classifiers import *
 from time import time
@@ -8,6 +8,7 @@ import pickle, os
 
 from imblearn.under_sampling import RandomUnderSampler
 from tabulate import tabulate
+from preprocessing import normalize_data
 
 def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,cv=3):
     """Compares the perfomace of models using recall, precision & fscore. Dumps the results in .txt file"""
@@ -26,7 +27,7 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
     for i in range(cv):
         print(f"Cross validation number : {i+1}")
         labels = np.random.choice(list(label_mapping.values()),(temp.sum(),1),p=p,replace=True)
-        generated_x = gan_generator.generate_data(labels)
+        generated_x = normalize_data(gan_generator.generate_data(labels),None)
 
         new_trainx = np.vstack([x_old,generated_x])
         new_y = np.append(y_old,labels)
@@ -44,6 +45,7 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
             perfomace_results[name][i]["precision"] = precision.tolist()
             perfomace_results[name][i]["recall"] = recall.tolist()
             perfomace_results[name][i]["fscore"] = fscore.tolist()
+            perfomace_results[name][i]["weighted_f1"] = [f1_score(y_test,pred,labels=list(label_mapping.values()),average='weighted')] * len(label_mapping)
 
     t = int(time())
     for estimator in perfomace_results.keys():
@@ -51,12 +53,17 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
 
         pred = models[estimator].predict(x_test)
         precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=list(label_mapping.values()))
-        before_balance = pd.DataFrame(data=np.vstack([precision,recall,fscore]).T,columns=list(tempdf.columns))
+        weighted_f1 = [f1_score(y_test,pred,labels=list(label_mapping.values()),average='weighted')] * len(label_mapping)
+        before_balance = pd.DataFrame(data=np.stack([precision,recall,fscore,weighted_f1]).T,columns=list(tempdf.columns))
 
+        tempdf = tempdf - before_balance
         for i in range(1,cv):
-            tempdf += pd.DataFrame.from_dict(perfomace_results[estimator][i])
+            tempdf = tempdf.append(pd.DataFrame.from_dict(perfomace_results[estimator][i]) - before_balance)
 
-        tempdf = (tempdf/cv) - before_balance
+        tempdf["class"] = tempdf.index
+        tempdf = tempdf.groupby("class").agg({'recall': ['mean', 'std'], 'precision': ['mean', 'std'], 'fscore': ['mean', 'std'], 'weighted_f1' : ['mean', 'std']})
+        tempdf.columns = [f"{i[0]}_{i[1]}" for i in tempdf.columns]
+
         with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
             outputfile.write("\n"+estimator+"\n")
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)

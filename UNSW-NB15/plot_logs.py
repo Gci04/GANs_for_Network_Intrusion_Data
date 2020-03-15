@@ -1,5 +1,5 @@
 import numpy as np
-import pickle, os
+import pickle, os, sys
 import pandas as pd
 from collections import defaultdict
 import matplotlib.pyplot as plt
@@ -35,7 +35,7 @@ def plot_summary(d_l, g_l,acc_r,acc_g, kl, m =''):
 
     axs3 = plt.subplot(212)
     n = np.arange(0,(len(kl)*10),10)
-    print("N = {}, Real n = {}".format(len(n),len(kl)))
+    # print("N = {}, Real n = {}".format(len(n),len(kl)))
     axs3.plot(n, kl,label='KL',linewidth=3)
     axs3.legend(loc=0,prop={'size': 13})
     axs3.set_ylabel('KL-Divergence',fontsize=15.0,fontweight="bold")
@@ -48,36 +48,41 @@ def plot_summary(d_l, g_l,acc_r,acc_g, kl, m =''):
     plt.close('all') #plt.close(fig)
     # plt.show()
 
-df = pd.read_csv("best_cgans.csv")
-# df["combined_ep"] = df['combined_ep']*2
-for i in df.values:
-    name = "CGAN_" + '_'.join(str(e) for e in i).replace(".","") + ".pickle"
-    print(name)
-    with open('logs/'+name, 'rb') as f:
-        x = pickle.load(f)
+if __name__ == '__main__':
+    if len(sys.argv) > 1 :
+        name = str(sys.argv[1]) #path to logs pickle
+        # name = "logs/CGAN_32_4_2000_128_1_1_relu_sgd_00005_27.pickle"
+        print(name)
+        with open( name, 'rb') as f:
+            x = pickle.load(f)
+        name = name.split("/")[-1]
 
-    d_l = np.array(x['discriminator_loss']).ravel()
-    g_l = np.array(x['Generator_loss']).ravel()
-    acc_history = np.array(x['acc_history'])
-    acc = acc_history.sum(axis=1) * 0.5
-    acc_real = acc_history[:,1]
-    acc_gen = acc_history[:,0]
-    kl = np.array(x["kl_divergence"]).ravel()
+        d_l = np.array(x['discriminator_loss']).ravel()
+        g_l = np.array(x['Generator_loss']).ravel()
+        acc_history = np.array(x['acc_history'])
+        acc = acc_history.sum(axis=1) * 0.5
+        acc_real = acc_history[:,1]
+        acc_gen = acc_history[:,0]
+        kl = np.array(x["kl_divergence"]).ravel()
+        plot_summary(d_l, g_l,acc_real,acc_gen,kl,name)
 
-    plot_summary(d_l, g_l,acc_real,acc_gen,kl,name)
+    else:
+        df = pd.read_csv("best_cgans.csv")
+        # df["combined_ep"] = df['combined_ep']*2
+        for p in df.values:
+            # main(p.tolist())
+            name = "logs/CGAN_" + '_'.join(str(e) for e in p.tolist()).replace(".","") + ".pickle"
 
-# i = [32, 3, 6000, 128, 1, 1, 'tanh', 'sgd', 0.0005, 27]
-# name = "CGAN_" + '_'.join(str(e) for e in i).replace(".","") + ".pickle"
-# print(name)
-# with open('logs/'+name, 'rb') as f:
-#     x = pickle.load(f)
-#
-# d_l = np.array(x['discriminator_loss']).ravel()
-# g_l = np.array(x['Generator_loss']).ravel()
-# acc_history = np.array(x['acc_history'])
-# acc = acc_history.sum(axis=1) * 0.5
-# acc_real = acc_history[:,1]
-# acc_gen = acc_history[:,0]
-# kl = np.array(x["kl_divergence"]).ravel()
-#
-# plot_summary(d_l, g_l,acc_real,acc_gen,kl,name)
+            print(name)
+            with open( name, 'rb') as f:
+                x = pickle.load(f)
+            name = name.split("/")[-1]
+
+            d_l = np.array(x['discriminator_loss']).ravel()
+            g_l = np.array(x['Generator_loss']).ravel()
+            acc_history = np.array(x['acc_history'])
+            acc = acc_history.sum(axis=1) * 0.5
+            acc_real = acc_history[:,1]
+            acc_gen = acc_history[:,0]
+            kl = np.array(x["kl_divergence"]).ravel()
+            plot_summary(d_l, g_l,acc_real,acc_gen,kl,name)

@@ -64,7 +64,7 @@ def main(arguments):
     model.dump_to_file()
 
     # m = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svmclf}
-    # utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=3)
+    utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, m ,cv=5)
 
 if __name__ == '__main__':
     # df = pd.read_csv("best_cgans.csv")
