@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
 
 import preprocessing, cgan, utils
 import classifiers as clfrs
@@ -31,10 +32,10 @@ def main(arguments):
     att_ind = np.where(y_train != label_mapping["Normal"])[0]
     for_test = np.where(y_test != label_mapping["Normal"])[0]
 
-    del label_mapping["Normal"] #remove Normal netwok traffic from data 
+    del label_mapping["Normal"] #remove Normal netwok traffic from data
     x = x_train[data_cols].values[att_ind]
     y = y_train[att_ind]
-    print(x.shape)
+    # print(x.shape)
 
     pretrained_classifiers = True
     if not pretrained_classifiers :
@@ -51,6 +52,11 @@ def main(arguments):
         utils.save_classifiers([randf,nn,deci,svmclf])
     else:
         ml_classifiers = utils.load_pretrained_classifiers()
+        # for classssiff in ml_classifiers.values():
+        #     print(classssiff.__class__.__name__)
+        #     if classssiff.__class__.__name__ == "SVC": continue
+        #     prediction = classssiff.predict(x_test[data_cols].values[for_test])
+        #     print(classification_report(y_test[for_test], prediction, labels = list(label_mapping.values()),target_names=list(label_mapping.keys())))
 
     #--------------------- Get or set GAN parameters ------------------------#
 
@@ -65,7 +71,8 @@ def main(arguments):
 
     #Genetare new data samples, fit ML models compare perfomance with ML models before data balancing
     utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5)
+    # utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], None, label_mapping, ml_classifiers ,cv=5)
 
 if __name__ == '__main__':
-    gan_params = [32, 4,6000, 128 , 1, 1, 'relu', 'sgd', 0.0005, 27]
+    gan_params = [32, 4,2000, 128 , 1, 1, 'relu', 'sgd', 0.0005, 27]
     main(gan_params)

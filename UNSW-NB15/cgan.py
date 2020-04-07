@@ -3,6 +3,10 @@ import os, pickle, tqdm
 from scipy.stats import norm
 
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+np.random.seed(12343)
+tf.set_random_seed(12343)
 from keras import backend as K
 from keras.models import Model
 from keras.layers import Dense, Input, concatenate, Dropout
@@ -209,4 +213,7 @@ class CGAN():
 
         with open(f"{save_dir}/CGAN_{self.gan_name}{'.pickle'}", "wb") as output_file:
             pickle.dump(H,output_file)
+
+        #Save Generator as .h5 file
+        self.generator.save("gen.h5")
         print("Save Model : [DONE]")

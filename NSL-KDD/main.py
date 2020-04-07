@@ -5,6 +5,7 @@ import preprocessing
 import utils
 import classifiers as clf
 import cgan, VannilaGan, wgan
+# from keras.models import load_model
 
 import matplotlib.pyplot as plt
 
@@ -15,7 +16,7 @@ def main(arguments):
 
     #Remove contant values with a threshold
     to_drop = preprocessing.get_contant_featues(train,data_cols,threshold=0.995)
-    # print(f"Constant Features : {to_drop}")
+
     train.drop(to_drop, axis=1,inplace=True)
     test.drop(to_drop, axis=1,inplace=True)
 
@@ -30,7 +31,7 @@ def main(arguments):
     y_train = x_train.label.values
     y_test = x_test.label.values
 
-    clf.DISPLAY_PERFOMANCE = False
+    clf.DISPLAY_PERFOMANCE = True
 
     #---------------------classification ------------------------#
 
@@ -38,11 +39,11 @@ def main(arguments):
     for_test = np.where(x_test.label != label_mapping["normal"])[0]
 
     del label_mapping["normal"]
-    # print(label_mapping)
     svm = clf.svm(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
     randf = clf.random_forest(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
     nn = clf.neural_network(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
     deci = clf.decision_tree(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+    clf.DISPLAY_PERFOMANCE = False
 
     #---------------Generative Adversarial Networks -------------#
 
@@ -54,25 +55,23 @@ def main(arguments):
 
     args = arguments
 
-    #Define & Train GANS
-    #--------------------For Vannila Gan------------------#
+    #--------------------Define & Train Vannila Gan------------------#
 
     # print(args)
     # model = VannilaGan.Vannila_GAN(args,x)
     # model.train()
     # model.save_model_componets()
 
-    #--------------------For cGAN-------------------------#
+    #--------------------Define & Train cGAN-------------------------#
 
     print(f'GAN params : {args}')
     model = cgan.CGAN(args,x,y.reshape(-1,1))
     model.train()
     model.dump_to_file()
 
-    ml_classifiers = {"RandomForestClassifier":randf,"MLPClassifier":nn,"DecisionTreeClassifier":deci,"SVC":svm}
-    clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5)
-
-    #--------------------For WCGAN-----------------------#
+    ml_classifiers = {'RandomForestClassifier':randf, 'MLPClassifier':nn, 'DecisionTreeClassifier':deci, 'SVC':svm}
+    clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5) #CGAN
+    clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], None, label_mapping, ml_classifiers ,cv=5) #SMOTE
 
 if __name__ == "__main__":
 
