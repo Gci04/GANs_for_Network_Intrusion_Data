@@ -1,9 +1,0 @@
-rand_dim,n_layers,combined_ep,batch_size,ep_d,ep_g,activation,Optimizer,learning_rate,base_n_count
-32,4,2000,64,1,1,relu,Adagrad,0.0001,27
-32,4,1000,128,1,1,tanh,sgd,0.001,27
-32,4,2000,64,1,1,tanh,Adamax,0.001,27
-32,4,1000,64,1,1,relu,Adadelta,0.01,27
-32,4,1500,128,1,1,tanh,sgd,0.001,27
-32,4,2000,64,1,1,tanh,adam,0.001,27
-32,4,3000,128,1,1,tanh,sgd,0.001,27
-32,4,2000,64,1,1,relu,sgd,0.0001,27

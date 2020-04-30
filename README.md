@@ -1,4 +1,4 @@
-# GANs for Improving Network Intrusion Benchmark Datasets
+# DGM : A Data Generative Model to Improve Minority Classes Presence in Anomaly Detection Domain
 
 This repository provides a Keras-Tensorflow implementation of an approach of generating artificial data to balance network Intrusion Benchmark datasets using Generative Adversarial Networks. Benchmarking datasets for Network Intrusion Detection : **NLS-KDD** and **UNSW-NB15**
 

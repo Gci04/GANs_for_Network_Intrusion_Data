@@ -1,0 +1,63 @@
+svm
+
+Class-wise Performance Report : 
+              precision    recall  f1-score   support
+
+         dos       0.96      0.84      0.89      7458
+       probe       0.40      0.88      0.55      2421
+         r2l       0.32      0.09      0.14      2754
+         u2r       0.40      0.25      0.31       200
+
+    accuracy                           0.68     12833
+   macro avg       0.52      0.52      0.47     12833
+weighted avg       0.71      0.68      0.66     12833
+
+random_forest
+
+Class-wise Performance Report : 
+              precision    recall  f1-score   support
+
+         dos       0.90      0.84      0.86      7458
+       probe       0.42      0.86      0.57      2421
+         r2l       0.77      0.26      0.38      2754
+         u2r       0.43      0.09      0.15       200
+
+    accuracy                           0.70     12833
+   macro avg       0.63      0.51      0.49     12833
+weighted avg       0.77      0.70      0.69     12833
+
+neural_network
+
+Class-wise Performance Report : 
+              precision    recall  f1-score   support
+
+         dos       0.95      0.83      0.88      7458
+       probe       0.43      0.88      0.58      2421
+         r2l       0.58      0.28      0.38      2754
+         u2r       0.65      0.24      0.36       200
+
+    accuracy                           0.71     12833
+   macro avg       0.65      0.56      0.55     12833
+weighted avg       0.77      0.71      0.71     12833
+
+decision_tree
+
+Class-wise Performance Report : 
+              precision    recall  f1-score   support
+
+         dos       0.93      0.78      0.85      7458
+       probe       0.44      0.80      0.56      2421
+         r2l       0.56      0.39      0.46      2754
+         u2r       0.19      0.23      0.21       200
+
+    accuracy                           0.69     12833
+   macro avg       0.53      0.55      0.52     12833
+weighted avg       0.75      0.69      0.70     12833
+
+Using SMOTE
+Time taken : 29.5505051612854
+Cross validation number  : 1
+Cross validation number  : 2
+Cross validation number  : 3
+Cross validation number  : 4
+Cross validation number  : 5

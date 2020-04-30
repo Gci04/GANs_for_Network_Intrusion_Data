@@ -104,14 +104,6 @@ venv.bak/
 .mypy_cache/
 
 .DS_Store
-logs/
-imgs/
-results/
 imgs_wcgan/
 wcgan_logs/
 results_cgan/
-*.h5
-unsw_pcaplots/
-nsl_pca_plots/
-plotpca.py
-trained_classifiers_1/
