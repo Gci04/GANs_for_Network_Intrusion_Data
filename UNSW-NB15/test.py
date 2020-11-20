@@ -55,8 +55,10 @@ def main():
 
     #Genetare new data samples, fit ML models compare perfomance with ML models before data balancing
     utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5)
+
     #test on SMOTE method
-    utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], None, label_mapping, ml_classifiers ,cv=5)
+    for smoteMethod in ["ADASYN","SMOTEENN","BorderlineSMOTE", "SMOTE"]:
+        utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], smoteMethod, label_mapping, ml_classifiers ,cv=5)
 
 if __name__ == '__main__':
     main()

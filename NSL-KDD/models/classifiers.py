@@ -12,7 +12,8 @@ from collections import defaultdict
 
 from tabulate import tabulate
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import SVMSMOTE
+from imblearn.over_sampling import SVMSMOTE, ADASYN, BorderlineSMOTE
+from imblearn.combine import SMOTEENN
 from time import time
 import os
 
@@ -100,7 +101,7 @@ def kMeans(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = True):
     kmeans = __train_and_test(kmeans, xtrain, ytrain, xtest, ytest,labels_mapping)
     return kmeans
 
-def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,cv=3):
+def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,cv=3):
 
     if not os.path.exists("./results"):
         os.makedirs("results")
@@ -109,26 +110,35 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
     #do downsapling
     rus = RandomUnderSampler(sampling_strategy = {label_mapping["dos"]:20000},random_state=42)
     x_old , y_old = rus.fit_resample(x_old,y_old)
-
+    name = 'DMG'
     start_t = time()
-    if gan_generator == None:
-        print("Using SMOTE")
+    if isinstance(data_generator,str):
+        print(f'Using : {data_generator}')
         up_sampling_strategy = {label_mapping["probe"]:14656, label_mapping["r2l"]:13995,label_mapping["u2r"]:10052}
-        sm = SVMSMOTE(sampling_strategy = up_sampling_strategy,svm_estimator=SVC(C=10, cache_size=1500, class_weight='balanced'))
+        if data_generator == "ADASYN":
+            sm = ADASYN(sampling_strategy = up_sampling_strategy,n_jobs=-1)
+        elif data_generator == "SMOTEENN":
+            sm = SMOTEENN(sampling_strategy = up_sampling_strategy,n_jobs=-1)
+        elif data_generator == "BorderlineSMOTE" :
+            sm = BorderlineSMOTE(sampling_strategy = up_sampling_strategy,n_jobs=-1)
+        else:
+            sm = SVMSMOTE(sampling_strategy = up_sampling_strategy,svm_estimator=SVC(C=10, cache_size=1500, class_weight='balanced'))
+
         sm.fit(x_old,y_old)
-        new_trainx, new_y = sm.fit_resample(x_old, y_old)
+        name = type(sm).__name__
+        # new_trainx, new_y = sm.fit_resample(x_old, y_old)
 
     elapsed_time = time() - start_t
     print(f"Time taken : {elapsed_time}")
 
     for i in range(cv):
         print(f"Cross validation number  : {i+1}")
-        if gan_generator != None:
+        if not isinstance(data_generator,str):
             labels = np.random.choice(list(label_mapping.values()),(26000,1),p=[0.0,0.115,0.5,0.385],replace=True)
             n = len(labels)
-            rand_noise_dim = gan_generator.input_shape[0][-1]
+            rand_noise_dim = data_generator.input_shape[0][-1]
             noise = np.random.normal(0, 1, (n, rand_noise_dim))
-            generated_x = gan_generator.predict([noise, labels])[:,:-1]
+            generated_x = data_generator.predict([noise, labels])[:,:-1]
             new_trainx = np.vstack([x_old,generated_x])
             new_y = np.append(y_old,labels)
         else :
@@ -173,6 +183,5 @@ def compare(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,c
             outputfile.write("\n"+estimator+"\n")
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)
 
-    name = 'Generative Model' if gan_generator != None else "SMOTE"
     with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
         outputfile.write(name)

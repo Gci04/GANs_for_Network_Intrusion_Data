@@ -8,17 +8,18 @@ import pickle, os
 from sklearn.svm import LinearSVC
 
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import SVMSMOTE
+from imblearn.over_sampling import SVMSMOTE, ADASYN, BorderlineSMOTE, KMeansSMOTE
+from imblearn.combine import SMOTEENN
 from tabulate import tabulate
 
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
 
 from matplotlib import pyplot as plt
-import seaborn as sns
-sns.set_style("darkgrid")
+# import seaborn as sns
+# sns.set_style("darkgrid")
 
-def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mapping, models,cv=3):
+def compare_classifiers(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,cv=3):
     """Compares the perfomace of models using recall, precision & fscore. Dumps the results in .txt file"""
 
     a = {'Analysis':6000, 'Backdoor':6000, 'DoS':3000, 'Exploits':0,'Fuzzers':2000,\
@@ -32,26 +33,36 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
     up_sampling_strategy = {label_mapping.get(j) : i+current_gt.get(label_mapping.get(j)) for j, i in a.items() if i > 0}
     # up_sampling_strategy = {}
     print(up_sampling_strategy)
-    return None
     start_t = time()
-    if gan_generator == None:
-        print("Using SMOTE")
-        sm = SVMSMOTE(sampling_strategy = up_sampling_strategy,svm_estimator=SVC(C=10, cache_size=1500, kernel = "linear",class_weight='balanced'),n_jobs=-1)
+    name = "DGM"
+    if isinstance(data_generator,str):
+        print(f'Using : {data_generator}')
+        up_sampling_strategy = {label_mapping["probe"]:14656, label_mapping["r2l"]:13995,label_mapping["u2r"]:10052}
+        if data_generator == "ADASYN":
+            sm = ADASYN(sampling_strategy = up_sampling_strategy,n_jobs=-1)
+        elif data_generator == "SMOTEENN":
+            sm = SMOTEENN(sampling_strategy = up_sampling_strategy,n_jobs=-1)
+        elif data_generator == "BorderlineSMOTE" :
+            sm = BorderlineSMOTE(sampling_strategy = up_sampling_strategy,n_jobs=-1)
+        else:
+            sm = SVMSMOTE(sampling_strategy = up_sampling_strategy,svm_estimator=SVC(C=10, cache_size=1500, class_weight='balanced'))
+
+        sm.fit(x_old,y_old)
+        name = type(sm).__name__
 
     elapsed_time = time() - start_t
     print(f"Time taken : {elapsed_time}")
-
     rus = RandomUnderSampler(sampling_strategy = {label_mapping["Generic"]:20000,label_mapping["Exploits"]:20000},random_state=42)
     x_old , y_old = rus.fit_resample(x_old,y_old)
 
     for i in range(cv):
         print(f"Cross validation number : {i+1}")
 
-        if gan_generator != None:
+        if not isinstance(data_generator,str):
             labels = np.random.choice(list(label_mapping.values()),(temp.sum(),1),p=p,replace=True)
-            rand_noise_dim = gan_generator.input_shape[0][-1]
+            rand_noise_dim = data_generator.input_shape[0][-1]
             noise = np.random.normal(0, 1, (n, rand_noise_dim))
-            generated_x = normalize_data(gan_generator.predict([noise, labels])[:,:-1],None)
+            generated_x = normalize_data(data_generator.predict([noise, labels])[:,:-1],None)
             new_trainx = np.vstack([x_old,generated_x])
             new_y = np.append(y_old,labels)
         else :
@@ -76,7 +87,6 @@ def compare_classifiers(x_old, y_old, x_test, y_test, gan_generator, label_mappi
             perfomace_results[name][i]["weighted_f1"] = [f1_score(y_test,pred,labels=list(label_mapping.values()),average='weighted')] * len(label_mapping)
 
     t = int(time())
-    name = "GAN" if gan_generator != None else "SMOTE"
     for estimator in perfomace_results.keys():
         tempdf = pd.DataFrame.from_dict(perfomace_results[estimator][0])
         tempdf.index = list(label_mapping.values())

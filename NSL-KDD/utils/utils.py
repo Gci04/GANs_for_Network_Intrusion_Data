@@ -3,8 +3,8 @@ import os, sys
 import pickle
 
 from matplotlib import pyplot as plt
-import seaborn as sns
-sns.set_style("darkgrid")
+# import seaborn as sns
+# sns.set_style("darkgrid")
 
 from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
@@ -127,7 +127,7 @@ def modelAccuracy(gen_pred,real_pred):
 def PlotPCA(n_components,X,y,label_mapping,save_dir="./nsl_pca_plots"):
     """Visualise classters of data x, clusters labels y. PCA for reducing x to 2D"""
     names = {j:i for i,j in label_mapping.items()}
-    pca = PCA(n_components=2).fit(X)
+    pca = PCA(n_components=n_components).fit(X)
     embedded_x = pca.transform(X)
     color = {0:"red", 2:"blue", 3:"black", 4:"green"}
 
