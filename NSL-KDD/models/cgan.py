@@ -6,14 +6,42 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 np.random.seed(12343)
-tf.set_random_seed(12343)
-# from tensorflow.python.util import deprecation
-# deprecation._PRINT_DEPRECATION_WARNINGS = False
-from keras import backend as K
-from keras.models import Model
-from keras.layers import Dense, Input, concatenate, Dropout
-from keras import optimizers
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Input, concatenate, Dropout, Activation
+from tensorflow.keras import optimizers
 from collections import defaultdict
+from tensorflow.keras.utils import get_custom_objects
+
+def h_function(value):
+    h_ = value
+    clip_val_max = tf.math.reduce_max(tf.math.reduce_max(h_))
+    h_ = tf.clip_by_value(h_,0,clip_val_max)
+    h_ = pow(h_,3)*(pow(h_,5)-(2*pow(h_,4))+2)
+    return h_
+
+def h2_function(value):
+    if value > 0:
+        return pow(value,3)*(pow(value,5)-(2*pow(value,4))+2)
+    else:
+        return 0
+
+def SPOCU_f(input):
+    alpha = 7.5
+    beta = 1
+    gamma = 8.7
+    out = alpha*h_function((input/gamma)+beta) - alpha*h2_function(beta)
+    return out
+
+class SPOCU(Activation):
+
+    def __init__(self, activation, **kwargs):
+        super(SPOCU, self).__init__(activation, **kwargs)
+        self.__name__ = 'spocu'
+
+
+get_custom_objects().update({'spocu': SPOCU(SPOCU_f)})
+# get_custom_objects().update({'spocu': Activation(SPOCU)})
 
 class CGAN():
     """Conditinal Generative Adversarial Network class"""
@@ -35,7 +63,6 @@ class CGAN():
 
         d = {}
 
-        # print(np.unique(self.y_train.ravel(),return_counts=True))
         val, count = np.unique(self.y_train.ravel(),return_counts=True)
         for v,c in zip(val,count):
             d[v] = 0.5/c
@@ -43,19 +70,22 @@ class CGAN():
         self.sample_prob = np.array(list(map(lambda x : d.get(x),self.y_train.ravel())))
         self.sample_prob /= self.sample_prob.sum()
 
-        K.clear_session()
+        # K.clear_session()
+        tf.keras.backend.clear_session()
         self.__define_models()
         self.trained = False
 
     def build_generator(self,x,labels):
         """Create the generator model G(z,l) : z -> random noise , l -> label (condition)"""
         x = concatenate([x,labels])
-        for n in range(1,self.n_layers+1):
+        for n in range(1,self.n_layers):
             if n == 2:
                 x = Dropout(0.2)(x)
             else:
                 x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
+                x = Dropout(0.5)(x)
 
+        x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
         x = Dense(self.x_data_dim)(x)
         x = concatenate([x,labels])
 
@@ -64,7 +94,11 @@ class CGAN():
     def build_discriminator(self,x):
         """Create the discrimnator model D(G(z,l)) : z -> random noise , l -> label (condition)"""
         for n in reversed(range(1,self.n_layers+1)):
-            x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
+            if n%2 == 0:
+                # x = Dense(self.min_num_neurones*n, activation='spocu')(x)
+                x = Dropout(0.2)(x)
+            else:
+                x = Dense(self.min_num_neurones*n, activation='relu')(x)
 
         x = Dense(1, activation='sigmoid')(x)
 
@@ -74,6 +108,7 @@ class CGAN():
         """Define Generator, Discriminator & combined model"""
 
         # Create & Compile generator
+        tf.keras.backend.clear_session()
         generator_input = Input(shape=(self.rand_noise_dim,))
         labels_tensor = Input(shape=(self.label_dim,))
         generator_output = self.build_generator(generator_input, labels_tensor)
@@ -107,8 +142,8 @@ class CGAN():
         K.set_value(self.combined.optimizer.lr,self.learning_rate)
 
         # Debug 3/3: compare if trainable weights correct
-        assert(len(self.discriminator._collected_trainable_weights) == n_disc_trainable)
-        assert(len(self.combined._collected_trainable_weights) == n_gen_trainable)
+        # assert(len(self.discriminator._collected_trainable_weights) == n_disc_trainable)
+        # assert(len(self.combined._collected_trainable_weights) == n_gen_trainable)
 
     def __get_batch_idx(self):
         """random selects batch_size samples indeces from training data"""
@@ -141,12 +176,14 @@ class CGAN():
                 noise = np.random.normal(0, 1, (self.batch_size, self.rand_noise_dim))
 
                 #Generate a half batch of new images
+
                 generated_x = self.generator.predict([noise, labels])
 
                 #Train the discriminator
                 d_loss_fake = self.discriminator.train_on_batch(generated_x, fake_labels)
                 d_loss_real = self.discriminator.train_on_batch(np.concatenate((x,labels),axis=1), real_labels)
                 d_loss = 0.5 * np.add(d_loss_real,d_loss_fake)
+                print("d_loss : {}".format(d_loss[0]))
 
             self.disc_loss_real.append(d_loss_real[0])
             self.disc_loss_generated.append(d_loss_fake[0])
@@ -165,8 +202,6 @@ class CGAN():
             if epoch % 10 == 0:
                 self.calculate_kl_div()
 
-            #Print metrices
-            #print ("Epoch : {:d} [D loss: {:.4f}, acc.: {:.4f}] [G loss: {:.4f}]".format(epoch, d_loss[0], 100*d_loss[1], g_loss[0]))
         self.trained = True
         print("Conditional GAN Training : [DONE]")
 
@@ -218,7 +253,5 @@ class CGAN():
         norm_q = q/q.sum(axis=1,keepdims=1)
 
         kl = np.sum(np.where(self.norm_p != 0, self.norm_p * np.log(self.norm_p/norm_q),0))
-        # print(" KL : {}".format(kl))
-        # K.set_learning_phase(1)
 
         self.kl_history.append(kl)

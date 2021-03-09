@@ -2,9 +2,11 @@ numpy
 pandas
 matplotlib
 keras==2.2.4
-tensorflow==1.15.0
+tensorflow
 pandas-profiling
 plotly==4.4.1
 tabulate
 imbalanced-learn
 category_encoders
+sklearn
+seaborn

@@ -11,7 +11,7 @@ from utils import utils
 from models import cgan
 import models.classifiers as clf
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 def main():
     #Load Data & Preprocess
@@ -56,9 +56,9 @@ def main():
     model = load_model('./trained_generator/gen.h5')
 
     # Evaluate classifiers performance after balancing data with GAN or SMOTE
-    # clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5) #CGAN
-    for smoteMethod in ["ADASYN","SMOTEENN","BorderlineSMOTE", "SMOTE"]:
-        clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], smoteMethod, label_mapping, ml_classifiers ,cv=5) #SMOTE
+    clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5) #CGAN
+    # for smoteMethod in ["ADASYN","SMOTEENN","BorderlineSMOTE", "SMOTE"]:
+    #     clf.compare(x,y, x_test[data_cols].values[for_test], y_test[for_test], smoteMethod, label_mapping, ml_classifiers ,cv=5) #SMOTE
 
 if __name__ == '__main__':
     main()

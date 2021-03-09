@@ -11,7 +11,7 @@ from utils import utils
 from models import cgan
 import models.classifiers as clfrs
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 def main():
     #Load data & preprocess
@@ -56,9 +56,9 @@ def main():
     #Genetare new data samples, fit ML models compare perfomance with ML models before data balancing
     utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], model, label_mapping, ml_classifiers ,cv=5)
 
-    #test on SMOTE method
-    for smoteMethod in ["ADASYN","SMOTEENN","BorderlineSMOTE", "SMOTE"]:
-        utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], smoteMethod, label_mapping, ml_classifiers ,cv=5)
+    # test on SMOTE method
+   for smoteMethod in ["ADASYN","SMOTEENN","BorderlineSMOTE", "SMOTE"]:
+       utils.compare_classifiers(x,y, x_test[data_cols].values[for_test], y_test[for_test], smoteMethod, label_mapping, ml_classifiers ,cv=5)
 
 if __name__ == '__main__':
     main()

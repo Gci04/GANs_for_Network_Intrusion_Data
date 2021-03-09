@@ -34,7 +34,7 @@ def compare_classifiers(x_old, y_old, x_test, y_test, data_generator, label_mapp
     # up_sampling_strategy = {}
     print(up_sampling_strategy)
     start_t = time()
-    name = "DGM"
+    nameUpsampler = "DGM"
     if isinstance(data_generator,str):
         print(f'Using : {data_generator}')
         up_sampling_strategy = {label_mapping["probe"]:14656, label_mapping["r2l"]:13995,label_mapping["u2r"]:10052}
@@ -48,7 +48,7 @@ def compare_classifiers(x_old, y_old, x_test, y_test, data_generator, label_mapp
             sm = SVMSMOTE(sampling_strategy = up_sampling_strategy,svm_estimator=SVC(C=10, cache_size=1500, class_weight='balanced'))
 
         sm.fit(x_old,y_old)
-        name = type(sm).__name__
+        nameUpsampler = type(sm).__name__
 
     elapsed_time = time() - start_t
     print(f"Time taken : {elapsed_time}")
@@ -61,7 +61,8 @@ def compare_classifiers(x_old, y_old, x_test, y_test, data_generator, label_mapp
         if not isinstance(data_generator,str):
             labels = np.random.choice(list(label_mapping.values()),(temp.sum(),1),p=p,replace=True)
             rand_noise_dim = data_generator.input_shape[0][-1]
-            noise = np.random.normal(0, 1, (n, rand_noise_dim))
+            noise = np.random.normal(0, 1, (len(labels), rand_noise_dim))
+            #print([noise, labels])
             generated_x = normalize_data(data_generator.predict([noise, labels])[:,:-1],None)
             new_trainx = np.vstack([x_old,generated_x])
             new_y = np.append(y_old,labels)
@@ -100,12 +101,12 @@ def compare_classifiers(x_old, y_old, x_test, y_test, data_generator, label_mapp
         tempdf = tempdf.groupby("class").agg({'precision': ['mean', 'std'], 'recall': ['mean', 'std'], 'fscore': ['mean', 'std'], 'weighted_f1' : ['mean', 'std']})
         tempdf.columns = [f"{i[0]}_{i[1]}" for i in tempdf.columns]
 
-        with open(f'./results/performance_{name}_{cv}validations.txt', 'a') as outputfile:
+        with open(f'./results/performance_{nameUpsampler}_{cv}validations.txt', 'a') as outputfile:
             outputfile.write("\n"+estimator+"\n")
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)
 
-    with open(f'./results/performance_{name}_{cv}validations.txt', 'a') as outputfile:
-        outputfile.write(name)
+    with open(f'./results/performance_{nameUpsampler}_{cv}validations.txt', 'a') as outputfile:
+        outputfile.write(nameUpsampler)
 
 def save_classifiers(clfs, dir = "./trained_classifiers"):
     if not os.path.exists(dir):

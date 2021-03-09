@@ -18,12 +18,7 @@ from time import time
 import os
 
 DISPLAY_PERFOMANCE = False
-try:
-    import catboost as cat
-except ImportError:
-    import pip
-    pip.main(['install', '--user', 'catboost'])
-    import catboost as cat
+
 
 def __display_perfomance(ytrue, ypred,labels_mapping):
     classes = ["dos", "normal", "probe", "r2l", "u2r"]
@@ -31,10 +26,10 @@ def __display_perfomance(ytrue, ypred,labels_mapping):
     print(classification_report(ytrue, ypred, labels = list(labels_mapping.values()),target_names=list(labels_mapping.keys())))
 
 def __train_and_test(model,xtrain,ytrain,xtest,ytest,labels_mapping):
-
+    x_train = np.nan_to_num(xtrain)
     model.fit(xtrain, ytrain)
     if DISPLAY_PERFOMANCE :
-        predictions = model.predict(xtest)
+        predictions = model.predict(np.nan_to_num(xtest))
         __display_perfomance(ytest,predictions,labels_mapping)
     return model
 
@@ -101,16 +96,16 @@ def kMeans(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = True):
     kmeans = __train_and_test(kmeans, xtrain, ytrain, xtest, ytest,labels_mapping)
     return kmeans
 
-def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,cv=3):
+def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,cv=3,rand_noise_dim=0):
 
     if not os.path.exists("./results"):
         os.makedirs("results")
 
     perfomace_results = defaultdict(defaultdict(dict).copy)
-    #do downsapling
+    #do downsampling
     rus = RandomUnderSampler(sampling_strategy = {label_mapping["dos"]:20000},random_state=42)
     x_old , y_old = rus.fit_resample(x_old,y_old)
-    name = 'DMG'
+    nameUpsampler = 'DMG'
     start_t = time()
     if isinstance(data_generator,str):
         print(f'Using : {data_generator}')
@@ -125,7 +120,7 @@ def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,
             sm = SVMSMOTE(sampling_strategy = up_sampling_strategy,svm_estimator=SVC(C=10, cache_size=1500, class_weight='balanced'))
 
         sm.fit(x_old,y_old)
-        name = type(sm).__name__
+        nameUpsampler = type(sm).__name__
         # new_trainx, new_y = sm.fit_resample(x_old, y_old)
 
     elapsed_time = time() - start_t
@@ -136,9 +131,15 @@ def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,
         if not isinstance(data_generator,str):
             labels = np.random.choice(list(label_mapping.values()),(26000,1),p=[0.0,0.115,0.5,0.385],replace=True)
             n = len(labels)
-            rand_noise_dim = data_generator.input_shape[0][-1]
-            noise = np.random.normal(0, 1, (n, rand_noise_dim))
-            generated_x = data_generator.predict([noise, labels])[:,:-1]
+            if rand_noise_dim == 0 :
+                rand_noise_dim = data_generator.input_shape[0][-1]
+                noise = np.random.normal(0, 1, (n, rand_noise_dim))
+                generated_x = data_generator.predict([noise, labels])[:,:-1]
+            else :
+                assert rand_noise_dim > 0
+                nameUpsampler = 'RELU'
+                noise = np.random.normal(0, 1, (n, rand_noise_dim))
+                generated_x = data_generator(noise, labels).numpy()
             new_trainx = np.vstack([x_old,generated_x])
             new_y = np.append(y_old,labels)
         else :
@@ -150,13 +151,13 @@ def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,
         supvm = svm(new_trainx, new_y, x_test, y_test,label_mapping,True)
 
         for estimator in [randf,deci,nn,supvm] :
-            name = estimator.__class__.__name__
+            classifier_name = estimator.__class__.__name__
             pred = estimator.predict(x_test)
             precision,recall,fscore,_ = precision_recall_fscore_support(y_test,pred,labels=[0,2,3,4])
-            perfomace_results[name][i]["precision"] = precision.tolist()
-            perfomace_results[name][i]["recall"] = recall.tolist()
-            perfomace_results[name][i]["fscore"] = fscore.tolist()
-            perfomace_results[name][i]["weighted_f1"] = [f1_score(y_test,pred,labels=[0,2,3,4],average='weighted')] * len(label_mapping)
+            perfomace_results[classifier_name][i]["precision"] = precision.tolist()
+            perfomace_results[classifier_name][i]["recall"] = recall.tolist()
+            perfomace_results[classifier_name][i]["fscore"] = fscore.tolist()
+            perfomace_results[classifier_name][i]["weighted_f1"] = [f1_score(y_test,pred,labels=[0,2,3,4],average='weighted')] * len(label_mapping)
 
     t = int(time())
     for estimator in perfomace_results.keys():
@@ -184,4 +185,4 @@ def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,
             print(tabulate(tempdf, headers='keys', tablefmt='psql'), file=outputfile)
 
     with open(f'results/performance{t}_{cv}validations.txt', 'a') as outputfile:
-        outputfile.write(name)
+        outputfile.write(nameUpsampler)

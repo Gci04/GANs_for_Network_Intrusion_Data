@@ -107,3 +107,6 @@ venv.bak/
 imgs_wcgan/
 wcgan_logs/
 results_cgan/
+NSL-KDD/training_checkpoints/*
+NSL-KDD/trained_classifiers/*
+UNSW-NB15/trained_classifiers/*

@@ -12,12 +12,6 @@ from sklearn.metrics import classification_report, precision_recall_fscore_suppo
 from tabulate import tabulate
 
 DISPLAY_PERFOMANCE = False
-try:
-    import catboost as cat
-except ImportError:
-    import pip
-    pip.main(['install', '--user', 'catboost'])
-    import catboost as cat
 
 def __display_perfomance(ytrue, ypred,labels_mapping):
     classes = ["dos", "normal", "probe", "r2l", "u2r"]

@@ -36,17 +36,17 @@ def main(arg):
     del label_mapping["normal"]
     clf.DISPLAY_PERFOMANCE = False
 
-    # train Ml classifiers
-    print("Training classifiers : [Started]")
-    svm = clf.svm(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
-    randf = clf.random_forest(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
-    nn = clf.neural_network(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
-    deci = clf.decision_tree(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
-    print("Training classifiers : [Finished]")
-
-    #Save ML trained models to disk models
-    utils.save_classifiers([svm,randf,nn,deci])
-    print("Classifiers save to disk : [SUCCESSFUL]")
+    # # train Ml classifiers
+    # print("Training classifiers : [Started]")
+    # svm = clf.svm(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
+    # randf = clf.random_forest(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+    # nn = clf.neural_network(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping,False)
+    # deci = clf.decision_tree(x_train[data_cols].values[att_ind], y_train[att_ind], x_test[data_cols].values[for_test], y_test[for_test],label_mapping)
+    # print("Training classifiers : [Finished]")
+    #
+    # #Save ML trained models to disk models
+    # utils.save_classifiers([svm,randf,nn,deci])
+    # print("Classifiers save to disk : [SUCCESSFUL]")
 
     x = x_train[data_cols].values[att_ind] #x_train.query(f'label == {label_mapping["normal"]}').values
     y = y_train[att_ind]
@@ -56,14 +56,15 @@ def main(arg):
     print("GAN Training Starting ....")
     model = cgan.CGAN(arg,x,y.reshape(-1,1))
     model.train()
-    model.dump_to_file()
-    print("GAN Training & Save [SUCCESSFUL]")
-
-    #Plot GAN training logs
-    gan_path = f"./logs/CGAN_{model.gan_name}.pickle"
-    utils.plot_training_summary(gan_path,'./imgs')
+    print(model.generate_data(np.array([1,2,3])))
+    # model.dump_to_file()
+    # print("GAN Training & Save [SUCCESSFUL]")
+    #
+    # #Plot GAN training logs
+    # gan_path = f"./logs/CGAN_{model.gan_name}.pickle"
+    # utils.plot_training_summary(gan_path,'./imgs')
 
 if __name__ == '__main__':
     # gan_params = [32, 500, 128, 1, 1, 'tanh', 'sgd', 0.0005, 27] #for vannilaGan
-    gan_params = [32, 4,2000, 128 , 1, 1, 'relu', 'sgd', 0.0005, 27] #for cGan
+    gan_params = [32, 5,100, 256 , 1, 1, 'spocu', 'sgd', 0.00003, 5] #for cGan
     main(gan_params)

@@ -6,12 +6,41 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 np.random.seed(12343)
-tf.set_random_seed(12343)
-from keras import backend as K
-from keras.models import Model
-from keras.layers import Dense, Input, concatenate, Dropout
-from keras import optimizers
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Input, concatenate, Dropout, Activation
+from tensorflow.keras import optimizers
 from collections import defaultdict
+from tensorflow.keras.utils import get_custom_objects
+
+def h_function(value):
+    h_ = value
+    clip_val_max = tf.math.reduce_max(tf.math.reduce_max(h_))
+    h_ = tf.clip_by_value(h_,0,clip_val_max)
+    h_ = pow(h_,3)*(pow(h_,5)-(2*pow(h_,4))+2)
+    return h_
+
+def h2_function(value):
+    if value > 0:
+        return pow(value,3)*(pow(value,5)-(2*pow(value,4))+2)
+    else:
+        return 0
+
+def SPOCU_f(input):
+    alpha = 3.0937
+    beta = 0.6653
+    gamma = 4.437
+    out = alpha*h_function((input/gamma)+beta) - alpha*h2_function(beta)
+    return out
+
+class SPOCU(Activation):
+
+    def __init__(self, activation, **kwargs):
+        super(SPOCU, self).__init__(activation, **kwargs)
+        self.__name__ = 'spocu'
+
+
+get_custom_objects().update({'spocu': SPOCU(SPOCU_f)})
 
 class CGAN():
     """Conditinal Generative Adversarial Network class"""
@@ -46,12 +75,14 @@ class CGAN():
     def build_generator(self,x,labels):
         """Create the generator model G(z,l) : z -> random noise , l -> label (condition)"""
         x = concatenate([x,labels])
-        for n in range(1,self.n_layers+1):
-            if n == 2 :
+        x = Dense(self.min_num_neurones*self.n_layers, activation=self.activation_f)(x)
+        for n in range(1,self.n_layers):
+            if n == 2:
                 x = Dropout(0.2)(x)
             else:
                 x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
 
+        x = Dense(self.min_num_neurones*self.n_layers, activation=self.activation_f)(x)
         x = Dense(self.x_data_dim)(x)
         x = concatenate([x,labels])
 
@@ -60,7 +91,10 @@ class CGAN():
     def build_discriminator(self,x):
         """Create the discrimnator model D(G(z,l)) : z -> random noise , l -> label (condition)"""
         for n in reversed(range(1,self.n_layers+1)):
-            x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
+            if n%2 == 0:
+                x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
+            else:
+                x = Dense(self.min_num_neurones*n, activation=self.activation_f)(x)
 
         x = Dense(1, activation='sigmoid')(x)
 
@@ -103,8 +137,8 @@ class CGAN():
         K.set_value(self.combined.optimizer.lr,self.learning_rate)
 
         # Debug 3/3: compare if trainable weights correct
-        assert(len(self.discriminator._collected_trainable_weights) == n_disc_trainable)
-        assert(len(self.combined._collected_trainable_weights) == n_gen_trainable)
+        # assert(len(self.discriminator._collected_trainable_weights) == n_disc_trainable)
+        # assert(len(self.combined._collected_trainable_weights) == n_gen_trainable)
 
     def __get_batch_idx(self):
         """random selects batch_size samples indeces from training data"""
