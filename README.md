@@ -5,13 +5,12 @@ This repository provides a Keras-Tensorflow implementation of an approach of gen
 ## Prerequisites
 
 * Keras >= 2.0.8
-* TensorFlow >= 1.3.0
+* TensorFlow
 * Numpy >= 1.13.3
 * Matplotlib >= 2.0.2
 * Seaborn >= 0.7.1
 * [tabulate 0.8.6](https://pypi.org/project/tabulate/)
 * [imbalanced-learn](https://pypi.org/project/imbalanced-learn/)
-* [Catboost](https://tech.yandex.com/catboost/)
 * [category_encoders](http://contrib.scikit-learn.org/categorical-encoding/index.html)
 
 All the libraries can be pip installed
@@ -22,7 +21,7 @@ All the libraries can be pip installed
 1. Navigate to repository folder
 1. Install dependencies which are specified in requirements.txt. use `pip install -r requirements.txt` or `pip3 install -r requirements.txt`
 1. Raw Data is being kept [here](Data) within this repo.
-1. Navigate to desired Data Generative Model `cd NSL-KDD` or `cd UNSW-NB15`, then train and test the model by running train and test scripts : `python train.py` first, then `python test.py`. 
+1. Navigate to desired Data Generative Model `cd NSL-KDD` or `cd UNSW-NB15`, then train and test the model by running train and test scripts : `python train.py` first, then `python test.py`.
 
 ## Repository directory layout
 
@@ -52,6 +51,6 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## Contact
 If you would like to get in touch, please contact: <br/>
-<!-- Gcinizwe Dlamini - g.dlamini@innopolis.university -->
+Gcinizwe Dlamini - g.dlamini@innopolis.university
 
 ## References

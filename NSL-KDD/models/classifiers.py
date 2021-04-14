@@ -5,7 +5,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
-from sklearn.cluster import MiniBatchKMeans, KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, precision_recall_fscore_support, f1_score
 from collections import defaultdict
@@ -46,12 +45,6 @@ def random_forest(xtrain, ytrain, xtest, ytest,labels_mapping):
     rf = __train_and_test(rf, xtrain, ytrain, xtest, ytest,labels_mapping)
     return rf
 
-def catBoost(xtrain, ytrain, xtest, ytest,labels_mapping):
-    cb = cat.CatBoostClassifier(verbose=0) #n_estimators=13,max_depth=5
-    # {'depth': 10, 'iterations': 800, 'l2_leaf_reg': 1, 'learning_rate': 0.1}
-    cb = __train_and_test(cb, xtrain, ytrain, xtest, ytest,labels_mapping)
-    return cb
-
 def neural_network(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = False):
     """
     First scale the data using StandardScaler if scaled == False
@@ -67,11 +60,6 @@ def neural_network(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = False):
     nn = __train_and_test(nn, xtrain, ytrain, xtest, ytest,labels_mapping)
     return nn
 
-def naive_bayes(xtrain, ytrain, xtest, ytest,labels_mapping):
-    nb = GaussianNB()
-    nb = __train_and_test(nb, xtrain, ytrain, xtest, ytest,labels_mapping)
-    return nb
-
 def svm(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = False):
     """
     First scale the data using StandardScaler if not scaled and maybe resample
@@ -84,17 +72,6 @@ def svm(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = False):
     svm = SVC(C=10, cache_size=1500, class_weight='balanced')
     svm = __train_and_test(svm, xtrain, ytrain, xtest, ytest,labels_mapping)
     return svm
-
-def kMeans(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = True):
-    """MiniBatchKMeans"""
-    if not scaled :
-        scaler = StandardScaler()
-        xtrain = scaler.fit_transform(xtrain)
-        xtest = scaler.transform(xtest)
-
-    kmeans = MiniBatchKMeans(n_clusters=len(labels_mapping.values()), random_state=0)
-    kmeans = __train_and_test(kmeans, xtrain, ytrain, xtest, ytest,labels_mapping)
-    return kmeans
 
 def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,cv=3,rand_noise_dim=0):
 

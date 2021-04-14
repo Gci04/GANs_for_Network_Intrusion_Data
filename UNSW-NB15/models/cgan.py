@@ -153,9 +153,6 @@ class CGAN():
         # Adversarial ground truths
         real_labels = np.ones((self.batch_size, 1))
         fake_labels = np.zeros((self.batch_size, 1))
-        # Adversarial ground truths with noise
-        #real_labels = np.random.uniform(low=0.999, high=1.0, size=(self.batch_size,1))
-        #fake_labes = np.random.uniform(low=0, high=0.00001, size=(self.batch_size,1))
 
         p = norm.pdf(self.X_train.T)
         self.norm_p = p/p.sum(axis=1,keepdims=1)

@@ -8,9 +8,6 @@ import plotly.express as px
 from sklearn.manifold import TSNE
 from tqdm import tqdm
 
-# import seaborn as sns
-# sns.set_style("darkgrid")
-
 from sklearn.decomposition import PCA
 
 from utils import preprocessing
