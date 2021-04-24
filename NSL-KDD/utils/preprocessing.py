@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
-import sys, os , warnings
+import sys, os, warnings
 import pandas_profiling
-from sklearn.preprocessing import LabelEncoder, StandardScaler ,MinMaxScaler,RobustScaler, PowerTransformer, normalize
-from category_encoders import *
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler, RobustScaler, PowerTransformer, normalize
+from category_encoders import HashingEncoder, OrdinalEncoder
 
 warnings.filterwarnings('ignore')
 
@@ -14,8 +14,8 @@ def get_data(encoding = 'Label', data_folder = "../Data/NSL-KDD"):
     Retrive Train and Test data
     """
 
-    train = pd.read_csv(data_folder+"/KDDTrain.csv")
-    test = pd.read_csv(data_folder+"/KDDTest.csv")
+    train = pd.read_csv(data_folder+"/KDDTrain.csv").query("label != 'normal'")
+    test = pd.read_csv(data_folder+"/KDDTest.csv").query("label != 'normal'")
 
     le = LabelEncoder()
     le.fit(train.label)
@@ -40,53 +40,42 @@ def get_data(encoding = 'Label', data_folder = "../Data/NSL-KDD"):
         train = enc.fit_transform(train,train.label)
         test = enc.transform(test)
 
-    if encoding == 'LeaveOneOut' :
-        enc = LeaveOneOutEncoder(cols=["protocol_type","service","flag"])
-        train = enc.fit_transform(train,train.label)
-        test = enc.transform(test)
-
-    if encoding == "catboost":
-        enc = CatBoostEncoder(cols=categorical_features)
-        train = enc.fit_transform(train,train.label)
-        test = enc.transform(test)
     return train, test, label_mapping
 
-def preprocess(x_train, x_test, data_cols, preprocessor = "StandardScaler",reject_features=False):
+def preprocess(x_train, x_test, preprocessor = "Robust",reject_features=True):
     """
     Scale and transform data with an option to remove highly correlated features
     """
     if reject_features :
-        # profile = pandas_profiling.ProfileReport(x_train)
-        # to_drop = profile.get_rejected_variables()
         to_drop = ['dst_host_srv_serror_rate','num_root','rerror_rate',
                     'serror_rate','srv_rerror_rate','srv_serror_rate']
         x_train.drop(to_drop,axis=1,inplace=True)
         x_test.drop(to_drop,axis=1,inplace=True)
-        data_cols = list(x_train.columns[ x_train.columns != 'label' ])
 
-    if preprocessor == "MinMax":
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        x_train[data_cols] = scaler.fit_transform(x_train[data_cols])
-        x_test[data_cols] = scaler.transform(x_test[data_cols])
-        return x_train, x_test
+    data_cols = list(x_train.columns[x_train.columns != 'label' ])
+
+    #Remove contant values with a threshold
+    to_drop = get_contant_featues(x_train,data_cols,threshold=0.995)
+
+    x_train.drop(to_drop, axis=1,inplace=True)
+    x_test.drop(to_drop, axis=1,inplace=True)
+
+    data_cols = list(x_train.columns[x_train.columns != 'label' ])
+    #Normalize row-wise the data (to unit norm) and scale column-wise
+    x_train = normalize_data(x_train,data_cols)
+    x_test = normalize_data(x_test,data_cols)
 
     if preprocessor == "Robust":
         scaler = RobustScaler(quantile_range=(0.1, 99.9))
         x_train[data_cols] = scaler.fit_transform(x_train[data_cols])
         x_test[data_cols] = scaler.transform(x_test[data_cols])
-        return x_train, x_test
-
-    if preprocessor == "power_transform":
-        pt = PowerTransformer(method="yeo-johnson")
-        x_train[data_cols] = pt.fit_transform(x_train[data_cols])
-        x_test[data_cols] = pt.transform(x_test[data_cols])
-        return x_train, x_test
+        return x_train, x_test, data_cols
 
     else :
         scaler = StandardScaler()
         x_train[data_cols] = scaler.fit_transform(x_train[data_cols])
         x_test[data_cols] = scaler.transform(x_test[data_cols])
-        return x_train, x_test
+        return x_train, x_test, data_cols
 
 def get_contant_featues(X,data_cols,threshold=0.995):
     """

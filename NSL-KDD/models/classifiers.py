@@ -18,7 +18,6 @@ import os
 
 DISPLAY_PERFOMANCE = False
 
-
 def __display_perfomance(ytrue, ypred,labels_mapping):
     classes = ["dos", "normal", "probe", "r2l", "u2r"]
     print("\nClass-wise Performance Report : ")
@@ -33,15 +32,13 @@ def __train_and_test(model,xtrain,ytrain,xtest,ytest,labels_mapping):
     return model
 
 def decision_tree(xtrain, ytrain, xtest, ytest,labels_mapping):
-    # dt = DecisionTreeClassifier(max_depth=20)
     dt = DecisionTreeClassifier(max_depth=None)
     dt = __train_and_test(dt, xtrain, ytrain, xtest, ytest,labels_mapping)
     return dt
 
 def random_forest(xtrain, ytrain, xtest, ytest,labels_mapping):
     n_estimators, max_depth = (13, None)
-    # rf = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, n_jobs=-1) #n_estimators=13,
-    rf = RandomForestClassifier(max_depth=None, n_jobs=-1) #n_estimators=13,
+    rf = RandomForestClassifier(max_depth=None, n_jobs=-1)
     rf = __train_and_test(rf, xtrain, ytrain, xtest, ytest,labels_mapping)
     return rf
 
@@ -54,9 +51,7 @@ def neural_network(xtrain, ytrain, xtest, ytest,labels_mapping, scaled = False):
         xtrain = scaler.fit_transform(xtrain)
         xtest = scaler.transform(xtest)
 
-    nn = MLPClassifier() #hidden_layer_sizes=30, alpha=0.0001, early_stopping=True
-    # hls, alpha, early_stopping = ((30,), 0.0001, True)
-    # nn = MLPClassifier(hidden_layer_sizes=hls, alpha=alpha, early_stopping=early_stopping)
+    nn = MLPClassifier()
     nn = __train_and_test(nn, xtrain, ytrain, xtest, ytest,labels_mapping)
     return nn
 
@@ -98,7 +93,6 @@ def compare(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,
 
         sm.fit(x_old,y_old)
         nameUpsampler = type(sm).__name__
-        # new_trainx, new_y = sm.fit_resample(x_old, y_old)
 
     elapsed_time = time() - start_t
     print(f"Time taken : {elapsed_time}")

@@ -1,6 +1,7 @@
 numpy
 pandas
 matplotlib
+torch
 keras==2.2.4
 tensorflow
 pandas-profiling
@@ -9,3 +10,4 @@ imbalanced-learn
 category_encoders
 sklearn
 seaborn
+spocu

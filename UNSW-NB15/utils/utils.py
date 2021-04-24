@@ -8,7 +8,7 @@ import pickle, os
 from sklearn.svm import LinearSVC
 
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.over_sampling import SVMSMOTE, ADASYN, BorderlineSMOTE, KMeansSMOTE
+from imblearn.over_sampling import SVMSMOTE, ADASYN, BorderlineSMOTE
 from imblearn.combine import SMOTEENN
 from tabulate import tabulate
 
@@ -16,8 +16,6 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
 
 from matplotlib import pyplot as plt
-# import seaborn as sns
-# sns.set_style("darkgrid")
 
 def compare_classifiers(x_old, y_old, x_test, y_test, data_generator, label_mapping, models,cv=3):
     """Compares the perfomace of models using recall, precision & fscore. Dumps the results in .txt file"""

@@ -1,14 +1,13 @@
 # DGM : A Data Generative Model to Improve Minority Classes Presence in Anomaly Detection Domain
 
-This repository provides a Keras-Tensorflow implementation of an approach of generating artificial data to balance network Intrusion Benchmark datasets using Generative Adversarial Networks. Benchmarking datasets for Network Intrusion Detection : **NLS-KDD** and **UNSW-NB15**
+This repository provides a **PyTorch** implementation of an approach of generating artificial data to balance network Intrusion Benchmark datasets using Generative Adversarial Networks. Benchmarking datasets for Network Intrusion Detection : **NLS-KDD** and **UNSW-NB15**
 
 ## Prerequisites
 
 * Keras >= 2.0.8
-* TensorFlow
+* PyTorch
 * Numpy >= 1.13.3
 * Matplotlib >= 2.0.2
-* Seaborn >= 0.7.1
 * [tabulate 0.8.6](https://pypi.org/project/tabulate/)
 * [imbalanced-learn](https://pypi.org/project/imbalanced-learn/)
 * [category_encoders](http://contrib.scikit-learn.org/categorical-encoding/index.html)
