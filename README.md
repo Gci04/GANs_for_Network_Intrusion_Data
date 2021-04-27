@@ -53,4 +53,19 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 If you would like to get in touch, please contact: <br/>
 Gcinizwe Dlamini - g.dlamini@innopolis.university
 
-## References
+# Citations and Contact.
+
+You find a PDF format here : [**DGM: a data generative model to improve minority class presence in anomaly detection domain**](https://idp.springer.com/authorize/casa?redirect_uri=https://link.springer.com/article/10.1007/s00521-021-05993-w&casa_token=srGv9eImr5QAAAAA:orwjaluAQLg19L_S3VPbTvMu4hEoWgstWKJ_RYANZE6boGdoAJm4hwdKh0IUQg1s1oeJyA1s4j9irjA2uDM)
+
+If you use our work, please also cite the paper:
+
+```
+@article{dlamini2021dgm,
+  title={DGM: a data generative model to improve minority class presence in anomaly detection domain},
+  author={Dlamini, Gcinizwe and Fahim, Muhammad},
+  journal={Neural Computing and Applications},
+  pages={1--12},
+  year={2021},
+  publisher={Springer}
+}
+```
