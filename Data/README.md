@@ -1,6 +1,6 @@
 # Network Intrusion Benchmark Datasets
 Two datasets are contained in this folder : <br>
-1. **[NSL-KDD](https://www.unb.ca/cic/datasets/nsl.html)** : data set suggested to solve some of the inherent problems of the KDD'99 data set. Although, this new version of the KDD data set still suffers from some of the problems discussed by McHugh and may not be a perfect representative of existing real networks.   
+1. **[NSL-KDD](https://www.unb.ca/cic/datasets/nsl.html)** : data set suggested to solve some of the inherent problems of the KDD'99 data set. Although, this new version of the KDD data set still suffers from some of the problems discussed by McHugh and may not be a perfect representative of existing real networks.
 
 1. **[UNSW-NB15](https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/)** : Network Intrusion data created by the Cyber Range Lab of the Australian Centre for Cyber Security. They captured the data by using the tool tcpdump.
 It contains real network traffic of normal patterns and
@@ -19,7 +19,7 @@ synthetic anomalies of network traffic.
     |     ├─ UNSW_NB15_training-set.csv   # Train dataset
     |     └─ unsw_profile.html          # Train dataset summary
     |
-    └── README.md    
+    └── README.md
 
 
 ## References

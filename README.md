@@ -18,14 +18,12 @@ All the libraries can be pip installed
 ## Getting Started
 
 1. Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
-1. Navigate to repository folder
-1. Install dependencies which are specified in requirements.txt. use `pip install -r requirements.txt` or `pip3 install -r requirements.txt`
-1. Raw Data is being kept [here](Data) within this repo.
-1. Navigate to desired Data Generative Model `cd NSL-KDD` or `cd UNSW-NB15`, then train and test the model by running train and test scripts : `python train.py` first, then `python test.py`.
+2. Navigate to repository folder
+3. Install dependencies using [poetry](https://python-poetry.org/docs/#installing-with-the-official-installer). use `poetry install`
+4. Raw Data is being kept [here](Data) within this repo.
+5. Navigate to desired Data Generative Model `cd NSL-KDD` or `cd UNSW-NB15`, then train and test the model by running train and test scripts : `poetry run python train.py` first, then `poetry run python test.py`.
 
 ## Repository directory layout
-
-<!-- ### Repository directory layout -->
 
     .
     ├── Data                    # Benchmark datasets folder
@@ -36,7 +34,7 @@ All the libraries can be pip installed
     │   ├── models              # Directory with implementation of the Generative Adversarial Networks and ML Classifiers
     │   ├── train.py            # Main file for testing model
     │   ├── test.py             # Main file for testing model
-    │   ├── README.md           
+    │   ├── README.md
     │   └── ...
     ├── UNSW-NB15               # Implementation for UNSW-NB15 dataset
     │   ├── models              # Directory with implementation of the Generative Adversarial Networks and ML Classifiers

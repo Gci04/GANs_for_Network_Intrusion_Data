@@ -1,67 +1,89 @@
-import pandas as pd
-import numpy as np
-import sys, os , warnings , pandas_profiling
+import os
+import sys
+import warnings
 from collections import defaultdict
-from sklearn.preprocessing import LabelEncoder, StandardScaler ,MinMaxScaler,RobustScaler, PowerTransformer, normalize
-from category_encoders import *
 
-warnings.filterwarnings('ignore')
+import numpy as np
+import pandas as pd
+import pandas_profiling
+from category_encoders import *
+from sklearn.preprocessing import (
+    LabelEncoder,
+    MinMaxScaler,
+    PowerTransformer,
+    RobustScaler,
+    StandardScaler,
+    normalize,
+)
+
+warnings.filterwarnings("ignore")
 
 data_folder = "../Data/UNSW-NB15"
 
-def get_data(encoding = "Label"):
 
-    #drop id feature
-    train = pd.read_csv(data_folder+"/UNSW_NB15_testing-set.csv",usecols=range(1,45))
-    test = pd.read_csv(data_folder+"/UNSW_NB15_training-set.csv",usecols=range(1,45))
+def get_data(encoding="Label"):
 
-    categorical_features = ["proto","state","service"]
+    # drop id feature
+    train = pd.read_csv(data_folder + "/UNSW_NB15_testing-set.csv", usecols=range(1, 45))
+    test = pd.read_csv(data_folder + "/UNSW_NB15_training-set.csv", usecols=range(1, 45))
+
+    categorical_features = ["proto", "state", "service"]
 
     le = LabelEncoder()
     le.fit(train.attack_cat)
     label_mapping = {l: i for i, l in enumerate(le.classes_)}
 
-    train['attack_cat'] = le.transform(train.attack_cat)
-    test['attack_cat'] = le.transform(test.attack_cat)
+    train["attack_cat"] = le.transform(train.attack_cat)
+    test["attack_cat"] = le.transform(test.attack_cat)
 
     if encoding == "OneHot":
         nTrain = train.shape[0]
-        combined = pd.get_dummies(pd.concat((train,test),axis=0), columns=categorical_features)
+        combined = pd.get_dummies(pd.concat((train, test), axis=0), columns=categorical_features)
         train = combined.iloc[:nTrain]
         test = combined.iloc[nTrain:]
 
-    if encoding == 'Hashing':
+    if encoding == "Hashing":
         enc = HashingEncoder(cols=categorical_features)
-        train = enc.fit_transform(train,train.label)
+        train = enc.fit_transform(train, train.label)
         test = enc.transform(test)
 
-    if encoding == 'Label':
+    if encoding == "Label":
         enc = OrdinalEncoder(cols=categorical_features)
-        train = enc.fit_transform(train,train.label)
+        train = enc.fit_transform(train, train.label)
         test = enc.transform(test)
 
-    if encoding == 'LeaveOneOut' :
+    if encoding == "LeaveOneOut":
         enc = LeaveOneOutEncoder(cols=categorical_features)
-        train = enc.fit_transform(train,train.label)
+        train = enc.fit_transform(train, train.label)
         test = enc.transform(test)
 
     if encoding == "catboost":
         enc = CatBoostEncoder(cols=categorical_features)
-        train = enc.fit_transform(train,train.label)
+        train = enc.fit_transform(train, train.label)
         test = enc.transform(test)
 
     return train, test, label_mapping
 
-def preprocess(x_train, x_test, data_cols, preprocessor = "StandardScaler",reject_features=False):
+
+def preprocess(x_train, x_test, data_cols, preprocessor="StandardScaler", reject_features=False):
     """
     Scale and transform data with an option to remove highly correlated features
     """
-    if reject_features :
-        to_drop =['ct_srv_dst', 'ct_srv_src', 'dloss', 'dpkts', 'is_ftp_login', 'sloss', 'spkts', 'swin']
-        #profile = pandas_profiling.ProfileReport(x_train)
-        #to_drop = profile.get_rejected_variables(0.95)
-        x_train.drop(to_drop,axis=1,inplace=True)
-        x_test.drop(to_drop,axis=1,inplace=True)
+    if reject_features:
+        to_drop = [
+            "ct_srv_dst",
+            "ct_srv_src",
+            "dloss",
+            "dpkts",
+            "is_ftp_login",
+            "sloss",
+            "spkts",
+            "swin",
+        ]
+        # profile = pandas_profiling.ProfileReport(x_train)
+        # to_drop = profile.get_rejected_variables(0.95)
+        x_train.drop(to_drop, axis=1, inplace=True)
+        x_test.drop(to_drop, axis=1, inplace=True)
         data_cols = list(x_train.columns)[:-2]
 
     if preprocessor == "MinMax":
@@ -82,13 +104,14 @@ def preprocess(x_train, x_test, data_cols, preprocessor = "StandardScaler",rejec
         x_test[data_cols] = pt.transform(x_test[data_cols])
         return x_train, x_test
 
-    else :
+    else:
         scaler = StandardScaler()
         x_train[data_cols] = scaler.fit_transform(x_train[data_cols])
         x_test[data_cols] = scaler.transform(x_test[data_cols])
         return x_train, x_test
 
-def get_contant_featues(X,data_cols,threshold=0.995):
+
+def get_contant_featues(X, data_cols, threshold=0.995):
     """
     Finds columns with contant value
 
@@ -105,11 +128,11 @@ def get_contant_featues(X,data_cols,threshold=0.995):
     ------
     result : List , array-like
         list of features having a contant value in Data X
-     """
+    """
     result = []
     for col in data_cols:
-        val, counts = np.unique(X[col],return_counts=True)
-        v = counts[0]/counts.sum()
+        val, counts = np.unique(X[col], return_counts=True)
+        v = counts[0] / counts.sum()
         if v > threshold:
             result.append(col)
 
