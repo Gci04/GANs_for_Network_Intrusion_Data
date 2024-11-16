@@ -34,7 +34,7 @@ All the libraries can be pip installed
     │   └── README.md           # Dataset info
     ├── NSL-KDD                 # Implementation for NSL-KDD dataset
     │   ├── models              # Directory with implementation of the Generative Adversarial Networks and ML Classifiers
-    │   ├── train.py            # Main file for testing model
+    │   ├── train.py            # Main file for training model
     │   ├── test.py             # Main file for testing model
     │   ├── README.md           
     │   └── ...
